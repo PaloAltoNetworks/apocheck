@@ -111,19 +111,21 @@ func NewCommand(
 				viper.GetStringSlice("categories"),
 				viper.GetInt("concurrent"),
 				viper.GetInt("stress"),
+				viper.GetBool("verbose"),
 			).Run(ctx, suite)
 		},
 	}
-	cmdRunTests.Flags().StringP("api", "a", "https://localhost:4443", "Address of the api gateway")
-	cmdRunTests.Flags().String("cacert", "", "Path to the api ca certificate")
-	cmdRunTests.Flags().String("cert", "", "Path to client certificate")
-	cmdRunTests.Flags().String("key", "", "Path to client certificate key")
-	cmdRunTests.Flags().String("key-pass", "", "Password for the certificate key")
-	cmdRunTests.Flags().StringSliceP("tag", "t", nil, "Only run tests with the given tags")
-	cmdRunTests.Flags().StringSliceP("id", "i", nil, "Only run tests with the given identifier")
+	cmdRunTests.Flags().BoolP("verbose", "V", false, "Show logs even on success")
+	cmdRunTests.Flags().DurationP("limit", "l", 5*time.Minute, "Execution time limit.")
 	cmdRunTests.Flags().IntP("concurrent", "c", 20, "Max number of concurrent tests.")
 	cmdRunTests.Flags().IntP("stress", "s", 1, "Number of time to run each time in parallel.")
-	cmdRunTests.Flags().DurationP("limit", "l", 5*time.Minute, "Execution time limit.")
+	cmdRunTests.Flags().String("cacert", "", "Path to the api ca certificate")
+	cmdRunTests.Flags().String("cert", "", "Path to client certificate")
+	cmdRunTests.Flags().String("key-pass", "", "Password for the certificate key")
+	cmdRunTests.Flags().String("key", "", "Path to client certificate key")
+	cmdRunTests.Flags().StringP("api", "a", "https://localhost:4443", "Address of the api gateway")
+	cmdRunTests.Flags().StringSliceP("id", "i", nil, "Only run tests with the given identifier")
+	cmdRunTests.Flags().StringSliceP("tag", "t", nil, "Only run tests with the given tags")
 
 	rootCmd.AddCommand(
 		versionCmd,

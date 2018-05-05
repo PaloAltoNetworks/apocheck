@@ -32,6 +32,7 @@ type testRunner struct {
 	stress      int
 	tlsConfig   *tls.Config
 	info        *bootstrap.Info
+	verbose     bool
 }
 
 func newTestRunner(
@@ -41,6 +42,7 @@ func newTestRunner(
 	tags []string,
 	concurrent int,
 	stress int,
+	verbose bool,
 ) *testRunner {
 
 	return &testRunner{
@@ -49,9 +51,12 @@ func newTestRunner(
 		api:         api,
 		tags:        tags,
 		stress:      stress,
+		verbose:     verbose,
 		info: &bootstrap.Info{
-			BootstrapCert: cert,
-			RootCAPool:    capool,
+			BootstrapCert:    cert,
+			RootCAPool:       capool,
+			SystemCAPool:     capool,
+			SystemClientCert: cert,
 		},
 		tlsConfig: &tls.Config{
 			RootCAs:      capool,
@@ -142,7 +147,7 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 			printStatus(suite, status, c, r.stress)
 
 			if c == len(suite)*r.stress {
-				printResults(status)
+				printResults(status, r.verbose)
 				return nil
 			}
 

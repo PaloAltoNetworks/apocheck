@@ -57,26 +57,31 @@ func printStatus(suite testSuite, status map[string]testRun, completed int, stre
 	goterm.MoveCursorUp(len(suite) + offset)
 }
 
-func printResults(status map[string]testRun) {
+func printResults(status map[string]testRun, showOnSuccess bool) {
 
 	var failures int
 	for n, run := range status {
 
-		if !hasErrors(run.errs) {
+		failed := hasErrors(run.errs)
+		if !failed && !showOnSuccess {
 			continue
 		}
 
-		failures++
+		color := goterm.GREEN
+		if failed {
+			failures++
+			color = goterm.YELLOW
+		}
 
 		fmt.Println()
-		fmt.Println(goterm.Bold(goterm.Color(fmt.Sprintf("[%s] %s", run.test.ID, n), goterm.YELLOW)))
+		fmt.Println(goterm.Bold(goterm.Color(fmt.Sprintf("[%s] %s", run.test.ID, n), color)))
 		fmt.Println()
 		fmt.Println(wordwrap.WrapString(fmt.Sprintf("%s — %s", run.test.Description, run.test.Author), 80))
 		fmt.Println()
 
 		for i, log := range run.loggers {
 
-			if run.errs[i] == nil {
+			if run.errs[i] == nil && !showOnSuccess {
 				continue
 			}
 
@@ -85,14 +90,16 @@ func printResults(status map[string]testRun) {
 				panic(err)
 			}
 
-			fmt.Printf("iteration %d failed after %s\n", i, run.durations[i].Round(time.Millisecond))
+			fmt.Printf("iteration %d log after %s\n", i, run.durations[i].Round(time.Millisecond))
 			if len(data) > 0 {
 				fmt.Printf("\n  %s\n", strings.Replace(string(data), "\n", "\n  ", -1))
 			} else {
 				fmt.Println("\n  <no logs>")
 			}
 
-			fmt.Println(goterm.Color(fmt.Sprintf("  error: %s", run.errs[i]), goterm.RED))
+			if failed {
+				fmt.Println(goterm.Color(fmt.Sprintf("  error: %s", run.errs[i]), goterm.RED))
+			}
 			fmt.Println()
 		}
 	}
