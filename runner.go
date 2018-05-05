@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aporeto-inc/underwater/bootstrap"
+
 	"github.com/aporeto-inc/addedeffect/apiutils"
 	"github.com/aporeto-inc/manipulate"
 	"github.com/aporeto-inc/manipulate/maniphttp"
@@ -29,6 +31,7 @@ type testRunner struct {
 	tags        []string
 	stress      int
 	tlsConfig   *tls.Config
+	info        *bootstrap.Info
 }
 
 func newTestRunner(
@@ -46,6 +49,10 @@ func newTestRunner(
 		api:         api,
 		tags:        tags,
 		stress:      stress,
+		info: &bootstrap.Info{
+			BootstrapCert: cert,
+			RootCAPool:    capool,
+		},
 		tlsConfig: &tls.Config{
 			RootCAs:      capool,
 			Certificates: []tls.Certificate{cert},
@@ -53,7 +60,7 @@ func newTestRunner(
 	}
 }
 
-func (r *testRunner) execute(ctx context.Context, suite testSuite, pf PlatformInfo, m manipulate.Manipulator) {
+func (r *testRunner) execute(ctx context.Context, suite testSuite, m manipulate.Manipulator) {
 
 	for _, test := range suite {
 
@@ -74,13 +81,13 @@ func (r *testRunner) execute(ctx context.Context, suite testSuite, pf PlatformIn
 
 				wg.Add(1)
 
-				go func() {
+				go func(iteration int) {
 
 					defer wg.Done()
 
 					start := time.Now()
 					buf := &bytes.Buffer{}
-					e := run.test.Function(ctx, buf, pf, m)
+					e := run.test.Function(ctx, buf, r.info, m, iteration)
 
 					l.Lock()
 					run.errs = append(run.errs, e)
@@ -89,7 +96,7 @@ func (r *testRunner) execute(ctx context.Context, suite testSuite, pf PlatformIn
 					l.Unlock()
 
 					r.resultsChan <- run
-				}()
+				}(i)
 			}
 
 			wg.Wait()
@@ -111,10 +118,11 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 		return err
 	}
 
+	r.info.Platform = pf
+
 	go r.execute(
 		ctx,
 		suite,
-		pf,
 		maniphttp.NewHTTPManipulatorWithTLS(r.api, "", "", "", r.tlsConfig),
 	)
 

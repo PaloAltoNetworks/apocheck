@@ -6,6 +6,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/aporeto-inc/underwater/bootstrap"
+
 	"github.com/aporeto-inc/apocheck"
 	"github.com/aporeto-inc/manipulate"
 )
@@ -17,7 +19,7 @@ func init() {
 		Description: "This test creates a namespace and tries to authenticate.",
 		Author:      "Antoine",
 		Tags:        []string{"suite1", "namespaces"},
-		Function: func(ctx context.Context, w io.Writer, i apocheck.PlatformInfo, m manipulate.Manipulator) error {
+		Function: func(ctx context.Context, w io.Writer, i *bootstrap.Info, m manipulate.Manipulator, iteration int) error {
 
 			<-time.After(time.Duration(rand.Intn(3)) * time.Second)
 			return nil
@@ -29,7 +31,7 @@ func init() {
 		Description: "This test creates a processing unit with attribute type missing.",
 		Author:      "Antoine",
 		Tags:        []string{"b", "c"},
-		Function: func(ctx context.Context, w io.Writer, i apocheck.PlatformInfo, m manipulate.Manipulator) error {
+		Function: func(ctx context.Context, w io.Writer, i *bootstrap.Info, m manipulate.Manipulator, iteration int) error {
 
 			<-time.After(time.Duration(rand.Intn(3)) * time.Second)
 			return nil

@@ -9,6 +9,7 @@ import (
 
 	"github.com/aporeto-inc/apocheck"
 	"github.com/aporeto-inc/manipulate"
+	"github.com/aporeto-inc/underwater/bootstrap"
 )
 
 func init() {
@@ -17,7 +18,7 @@ func init() {
 		Description: "This test creates a network access policy, two processing units and verifies communication between them.",
 		Author:      "Antoine Mercadal",
 		Tags:        []string{"suite2"},
-		Function: func(ctx context.Context, w io.Writer, i apocheck.PlatformInfo, m manipulate.Manipulator) error {
+		Function: func(ctx context.Context, w io.Writer, i *bootstrap.Info, m manipulate.Manipulator, iteration int) error {
 
 			<-time.After(time.Duration(rand.Intn(3)) * time.Second)
 			if rand.Intn(10) <= 8 {
@@ -37,7 +38,7 @@ func init() {
 		Description: "This test tries kube-squall but we all know it always fail. It will pass at next run.",
 		Author:      "Antoine Mercadal",
 		Tags:        []string{"suite2"},
-		Function: func(ctx context.Context, w io.Writer, i apocheck.PlatformInfo, m manipulate.Manipulator) error {
+		Function: func(ctx context.Context, w io.Writer, i *bootstrap.Info, m manipulate.Manipulator, iteration int) error {
 
 			<-time.After(time.Duration(rand.Intn(3)) * time.Second)
 			if rand.Intn(10) <= 8 {
