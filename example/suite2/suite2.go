@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math/rand"
 	"time"
 
 	"github.com/aporeto-inc/apocheck"
@@ -17,13 +18,17 @@ func init() {
 		Author:      "Antoine Mercadal",
 		Tags:        []string{"suite2"},
 		Function: func(ctx context.Context, w io.Writer, i apocheck.PlatformInfo, m manipulate.Manipulator) error {
-			<-time.After(3 * time.Second)
+
+			<-time.After(time.Duration(rand.Intn(3)) * time.Second)
+			if rand.Intn(10) <= 8 {
+				return nil
+			}
 
 			fmt.Fprintln(w, "create a namespace")
 			fmt.Fprintln(w, "add a policy")
 			fmt.Fprintln(w, "send traffic")
 
-			return fmt.Errorf("Unable to do send traffic")
+			return fmt.Errorf("Unable to send traffic")
 		},
 	})
 
@@ -33,7 +38,11 @@ func init() {
 		Author:      "Antoine Mercadal",
 		Tags:        []string{"suite2"},
 		Function: func(ctx context.Context, w io.Writer, i apocheck.PlatformInfo, m manipulate.Manipulator) error {
-			<-time.After(3 * time.Second)
+
+			<-time.After(time.Duration(rand.Intn(3)) * time.Second)
+			if rand.Intn(10) <= 8 {
+				return nil
+			}
 
 			fmt.Fprintln(w, "start kube-squall")
 			fmt.Fprintln(w, "start enforcerd")

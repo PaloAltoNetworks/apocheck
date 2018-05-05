@@ -110,6 +110,7 @@ func NewCommand(
 				cert,
 				viper.GetStringSlice("categories"),
 				viper.GetInt("concurrent"),
+				viper.GetInt("stress"),
 			).Run(ctx, suite)
 		},
 	}
@@ -121,6 +122,7 @@ func NewCommand(
 	cmdRunTests.Flags().StringSliceP("tag", "t", nil, "Only run tests with the given tags")
 	cmdRunTests.Flags().StringSliceP("id", "i", nil, "Only run tests with the given identifier")
 	cmdRunTests.Flags().IntP("concurrent", "c", 20, "Max number of concurrent tests.")
+	cmdRunTests.Flags().IntP("stress", "s", 1, "Number of time to run each time in parallel.")
 	cmdRunTests.Flags().DurationP("limit", "l", 5*time.Minute, "Execution time limit.")
 
 	rootCmd.AddCommand(

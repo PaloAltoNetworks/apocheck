@@ -3,6 +3,7 @@ package suite1
 import (
 	"context"
 	"io"
+	"math/rand"
 	"time"
 
 	"github.com/aporeto-inc/apocheck"
@@ -18,8 +19,7 @@ func init() {
 		Tags:        []string{"suite1", "namespaces"},
 		Function: func(ctx context.Context, w io.Writer, i apocheck.PlatformInfo, m manipulate.Manipulator) error {
 
-			<-time.After(1 * time.Second)
-
+			<-time.After(time.Duration(rand.Intn(3)) * time.Second)
 			return nil
 		},
 	})
@@ -31,8 +31,7 @@ func init() {
 		Tags:        []string{"b", "c"},
 		Function: func(ctx context.Context, w io.Writer, i apocheck.PlatformInfo, m manipulate.Manipulator) error {
 
-			<-time.After(2 * time.Second)
-
+			<-time.After(time.Duration(rand.Intn(3)) * time.Second)
 			return nil
 		},
 	})

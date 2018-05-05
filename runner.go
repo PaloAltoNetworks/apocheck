@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"io"
+	"sync"
 	"time"
 
 	"github.com/aporeto-inc/addedeffect/apiutils"
@@ -14,18 +15,19 @@ import (
 )
 
 type testRun struct {
-	ctx     context.Context
-	test    Test
-	logger  io.ReadWriter
-	elapsed time.Duration
-	err     error
+	ctx       context.Context
+	test      Test
+	durations []time.Duration
+	loggers   []io.ReadWriter
+	errs      []error
 }
 
 type testRunner struct {
 	resultsChan chan testRun
 	sem         chan struct{}
 	api         string
-	categories  []string
+	tags        []string
+	stress      int
 	tlsConfig   *tls.Config
 }
 
@@ -33,15 +35,17 @@ func newTestRunner(
 	api string,
 	capool *x509.CertPool,
 	cert tls.Certificate,
-	categories []string,
+	tags []string,
 	concurrent int,
+	stress int,
 ) *testRunner {
 
 	return &testRunner{
-		resultsChan: make(chan testRun, concurrent),
+		resultsChan: make(chan testRun, concurrent*stress),
 		sem:         make(chan struct{}, concurrent),
 		api:         api,
-		categories:  categories,
+		tags:        tags,
+		stress:      stress,
 		tlsConfig: &tls.Config{
 			RootCAs:      capool,
 			Certificates: []tls.Certificate{cert},
@@ -63,16 +67,36 @@ func (r *testRunner) execute(ctx context.Context, suite testSuite, pf PlatformIn
 
 			defer func() { <-r.sem }()
 
-			start := time.Now()
-			run.err = run.test.Function(run.ctx, run.logger, pf, m)
-			run.elapsed = time.Since(start)
+			var wg sync.WaitGroup
+			l := &sync.Mutex{}
 
-			r.resultsChan <- run
+			for i := 0; i < r.stress; i++ {
+
+				wg.Add(1)
+
+				go func() {
+
+					defer wg.Done()
+
+					start := time.Now()
+					buf := &bytes.Buffer{}
+					e := run.test.Function(ctx, buf, pf, m)
+
+					l.Lock()
+					run.errs = append(run.errs, e)
+					run.loggers = append(run.loggers, buf)
+					run.durations = append(run.durations, time.Since(start))
+					l.Unlock()
+
+					r.resultsChan <- run
+				}()
+			}
+
+			wg.Wait()
 
 		}(testRun{
-			ctx:    ctx,
-			test:   test,
-			logger: &bytes.Buffer{},
+			ctx:  ctx,
+			test: test,
 		})
 	}
 }
@@ -94,21 +118,23 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 		maniphttp.NewHTTPManipulatorWithTLS(r.api, "", "", "", r.tlsConfig),
 	)
 
-	completed := map[string]testRun{}
+	status := map[string]testRun{}
+	var c int
 
-	printStatus(suite, completed)
+	printStatus(suite, status, 0, r.stress)
 
 	for {
 		select {
 
 		case run := <-r.resultsChan:
 
-			completed[run.test.Name] = run
+			c++
+			status[run.test.Name] = run
 
-			printStatus(suite, completed)
+			printStatus(suite, status, c, r.stress)
 
-			if len(completed) == len(suite) {
-				printResults(completed)
+			if c == len(suite)*r.stress {
+				printResults(status)
 				return nil
 			}
 
