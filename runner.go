@@ -49,8 +49,6 @@ func newTestRunner(
 	}
 }
 
-//suite := mainTestSuite.TestsForCategories(r.categories...)
-
 func (r *testRunner) execute(ctx context.Context, suite testSuite, pf PlatformInfo, m manipulate.Manipulator) {
 
 	for _, test := range suite {
