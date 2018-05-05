@@ -12,7 +12,6 @@ import (
 func init() {
 
 	apocheck.RegisterTest(apocheck.Test{
-		ID:          "apo-ns1",
 		Name:        "Create a namespace and login",
 		Description: "This test creates a namespace and tries to authenticate.",
 		Author:      "Antoine",
@@ -26,7 +25,6 @@ func init() {
 	})
 
 	apocheck.RegisterTest(apocheck.Test{
-		ID:          "apo-pu1",
 		Name:        "Create a processing unit with missing attribute",
 		Description: "This test creates a processing unit with attribute type missing.",
 		Author:      "Antoine",

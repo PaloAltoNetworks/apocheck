@@ -69,7 +69,7 @@ func printResults(status map[string]testRun) {
 		failures++
 
 		fmt.Println()
-		fmt.Println(goterm.Bold(goterm.Color(fmt.Sprintf("%s: failed after %s", n, run.elapsed.Round(time.Millisecond)), goterm.YELLOW)))
+		fmt.Println(goterm.Bold(goterm.Color(fmt.Sprintf("[%s] %s: failed after %s", run.test.ID, n, run.elapsed.Round(time.Millisecond)), goterm.YELLOW)))
 		fmt.Println()
 		fmt.Println(wordwrap.WrapString(fmt.Sprintf("%s — %s", run.test.Description, run.test.Author), 80))
 		data, err := ioutil.ReadAll(run.logger)

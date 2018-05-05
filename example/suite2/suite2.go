@@ -12,7 +12,6 @@ import (
 
 func init() {
 	apocheck.RegisterTest(apocheck.Test{
-		ID:          "apo-np1",
 		Name:        "Create a network policy and check traffic",
 		Description: "This test creates a network access policy, two processing units and verifies communication between them.",
 		Author:      "Antoine Mercadal",
@@ -29,7 +28,6 @@ func init() {
 	})
 
 	apocheck.RegisterTest(apocheck.Test{
-		ID:          "apo-ks1",
 		Name:        "Try kube-squall",
 		Description: "This test tries kube-squall but we all know it always fail. It will pass at next run.",
 		Author:      "Antoine Mercadal",

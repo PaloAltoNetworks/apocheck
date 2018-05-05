@@ -93,9 +93,10 @@ func NewCommand(
 			ctx, cancel := context.WithTimeout(context.Background(), viper.GetDuration("limit"))
 			defer cancel()
 
+			suite := mainTestSuite
+
 			tags := viper.GetStringSlice("tag")
 			ids := viper.GetStringSlice("id")
-			var suite testSuite
 			if len(tags) > 0 {
 				suite = mainTestSuite.testsWithTags(tags...)
 			}
