@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitchellh/go-wordwrap"
+
 	"github.com/buger/goterm"
 )
 
@@ -58,18 +60,19 @@ func printStatus(suite TestSuite, status map[string]testRun) {
 func printResults(status map[string]testRun) {
 
 	var failures int
-	for n, t := range status {
+	for n, run := range status {
 
-		if t.err == nil {
+		if run.err == nil {
 			continue
 		}
 
 		failures++
 
 		fmt.Println()
-		fmt.Println(goterm.Color(fmt.Sprintf("%s: failed after %s", n, t.elapsed.Round(time.Millisecond)), goterm.RED))
-
-		data, err := ioutil.ReadAll(t.logger)
+		fmt.Println(goterm.Bold(goterm.Color(fmt.Sprintf("%s: failed after %s", n, run.elapsed.Round(time.Millisecond)), goterm.YELLOW)))
+		fmt.Println()
+		fmt.Println(wordwrap.WrapString(fmt.Sprintf("%s — %s", run.test.Description, run.test.Author), 80))
+		data, err := ioutil.ReadAll(run.logger)
 		if err != nil {
 			panic(err)
 		}
@@ -80,7 +83,8 @@ func printResults(status map[string]testRun) {
 			fmt.Println("<no logs>")
 		}
 
-		fmt.Println(goterm.Color(fmt.Sprintf("  error: %s", t.err), goterm.RED))
+		fmt.Println(goterm.Color(fmt.Sprintf("  error: %s", run.err), goterm.RED))
+		fmt.Println()
 	}
 
 	if failures == 0 {

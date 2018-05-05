@@ -115,7 +115,7 @@ func (r *testRunner) Run(ctx context.Context, suite TestSuite) error {
 			}
 
 		case <-ctx.Done():
-			return nil
+			return ctx.Err()
 		}
 	}
 }

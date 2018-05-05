@@ -90,7 +90,7 @@ func NewCommand(
 			certPool := x509.NewCertPool()
 			certPool.AppendCertsFromPEM(data)
 
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+			ctx, cancel := context.WithTimeout(context.Background(), viper.GetDuration("limit"))
 			defer cancel()
 
 			return newTestRunner(
@@ -109,6 +109,7 @@ func NewCommand(
 	cmdRunTests.Flags().String("key-pass", "", "Password for the certificate key")
 	cmdRunTests.Flags().StringSliceP("categories", "C", nil, "Password for the certificate key")
 	cmdRunTests.Flags().IntP("concurrent", "c", 20, "Max number of concurrent tests.")
+	cmdRunTests.Flags().DurationP("limit", "l", 5*time.Minute, "Execution time limit.")
 
 	rootCmd.AddCommand(
 		versionCmd,
