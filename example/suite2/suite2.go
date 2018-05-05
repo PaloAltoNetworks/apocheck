@@ -12,10 +12,11 @@ import (
 
 func init() {
 	apocheck.RegisterTest(apocheck.Test{
+		ID:          "apo-np1",
 		Name:        "Create a network policy and check traffic",
 		Description: "This test creates a network access policy, two processing units and verifies communication between them.",
 		Author:      "Antoine Mercadal",
-		Categories:  []string{"suite2"},
+		Tags:        []string{"suite2"},
 		Function: func(ctx context.Context, w io.Writer, i apocheck.PlatformInfo, m manipulate.Manipulator) error {
 			<-time.After(3 * time.Second)
 
@@ -28,10 +29,11 @@ func init() {
 	})
 
 	apocheck.RegisterTest(apocheck.Test{
+		ID:          "apo-ks1",
 		Name:        "Try kube-squall",
 		Description: "This test tries kube-squall but we all know it always fail. It will pass at next run.",
 		Author:      "Antoine Mercadal",
-		Categories:  []string{"suite2"},
+		Tags:        []string{"suite2"},
 		Function: func(ctx context.Context, w io.Writer, i apocheck.PlatformInfo, m manipulate.Manipulator) error {
 			<-time.After(3 * time.Second)
 

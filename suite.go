@@ -5,21 +5,19 @@ import (
 	"strings"
 )
 
-// A TestSuite represents a suite of tests.
-type TestSuite map[string]Test
+type testSuite map[string]Test
 
-// TestsForCategories returns a tests matching the given categories.
-func (s TestSuite) TestsForCategories(categories ...string) TestSuite {
+func (s testSuite) testsWithTags(tags ...string) testSuite {
 
-	if len(categories) == 0 {
+	if len(tags) == 0 {
 		return s
 	}
 
-	ts := TestSuite{}
+	ts := testSuite{}
 
 	for _, t := range s {
-		for _, c := range t.Categories {
-			for _, wc := range categories {
+		for _, c := range t.Tags {
+			for _, wc := range tags {
 				if wc == c {
 					ts[t.Name] = t
 				}
@@ -30,8 +28,25 @@ func (s TestSuite) TestsForCategories(categories ...string) TestSuite {
 	return ts
 }
 
-// Sorted returns the sorted suite of test by name.
-func (s TestSuite) Sorted() (out []Test) {
+func (s testSuite) testsWithIDs(ids ...string) testSuite {
+	if len(ids) == 0 {
+		return s
+	}
+
+	ts := testSuite{}
+
+	for _, t := range s {
+		for _, id := range ids {
+			if id == t.ID {
+				ts[t.Name] = t
+			}
+		}
+	}
+
+	return ts
+}
+
+func (s testSuite) sorted() (out []Test) {
 
 	for _, t := range s {
 		out = append(out, t)

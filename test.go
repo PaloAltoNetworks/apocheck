@@ -17,17 +17,19 @@ type TestFunction func(context.Context, io.Writer, PlatformInfo, manipulate.Mani
 
 // A Test represents an actual test.
 type Test struct {
+	ID          string
 	Name        string
 	Description string
 	Author      string
-	Categories  []string
+	Tags        []string
 	Function    TestFunction
 }
 
 func (t Test) String() string {
-	return fmt.Sprintf(`name       : %s
+	return fmt.Sprintf(`id         : %s
+name       : %s
 desc       : %s
 author     : %s
 categories : %s
-`, t.Name, t.Description, t.Author, strings.Join(t.Categories, ", "))
+`, t.ID, t.Name, t.Description, t.Author, strings.Join(t.Tags, ", "))
 }

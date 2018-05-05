@@ -11,14 +11,14 @@ import (
 	"github.com/buger/goterm"
 )
 
-func printStatus(suite TestSuite, status map[string]testRun) {
+func printStatus(suite testSuite, status map[string]testRun) {
 
 	ntests := len(suite)
 	offset := 1
 
 	var s string
 
-	for i, t := range suite.Sorted() {
+	for i, t := range suite.sorted() {
 
 		run, ok := status[t.Name]
 		if !ok {

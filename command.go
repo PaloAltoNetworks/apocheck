@@ -93,13 +93,23 @@ func NewCommand(
 			ctx, cancel := context.WithTimeout(context.Background(), viper.GetDuration("limit"))
 			defer cancel()
 
+			tags := viper.GetStringSlice("tag")
+			ids := viper.GetStringSlice("id")
+			var suite testSuite
+			if len(tags) > 0 {
+				suite = mainTestSuite.testsWithTags(tags...)
+			}
+			if len(ids) > 0 {
+				suite = mainTestSuite.testsWithIDs(ids...)
+			}
+
 			return newTestRunner(
 				viper.GetString("api"),
 				certPool,
 				cert,
 				viper.GetStringSlice("categories"),
 				viper.GetInt("concurrent"),
-			).Run(ctx, mainTestSuite)
+			).Run(ctx, suite)
 		},
 	}
 	cmdRunTests.Flags().StringP("api", "a", "https://localhost:4443", "Address of the api gateway")
@@ -107,7 +117,8 @@ func NewCommand(
 	cmdRunTests.Flags().String("cert", "", "Path to client certificate")
 	cmdRunTests.Flags().String("key", "", "Path to client certificate key")
 	cmdRunTests.Flags().String("key-pass", "", "Password for the certificate key")
-	cmdRunTests.Flags().StringSliceP("categories", "C", nil, "Password for the certificate key")
+	cmdRunTests.Flags().StringSliceP("tag", "t", nil, "Only run tests with the given tags")
+	cmdRunTests.Flags().StringSliceP("id", "i", nil, "Only run tests with the given identifier")
 	cmdRunTests.Flags().IntP("concurrent", "c", 20, "Max number of concurrent tests.")
 	cmdRunTests.Flags().DurationP("limit", "l", 5*time.Minute, "Execution time limit.")
 

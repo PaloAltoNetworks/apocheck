@@ -51,7 +51,7 @@ func newTestRunner(
 
 //suite := mainTestSuite.TestsForCategories(r.categories...)
 
-func (r *testRunner) execute(ctx context.Context, suite TestSuite, pf PlatformInfo, m manipulate.Manipulator) {
+func (r *testRunner) execute(ctx context.Context, suite testSuite, pf PlatformInfo, m manipulate.Manipulator) {
 
 	for _, test := range suite {
 
@@ -79,7 +79,7 @@ func (r *testRunner) execute(ctx context.Context, suite TestSuite, pf PlatformIn
 	}
 }
 
-func (r *testRunner) Run(ctx context.Context, suite TestSuite) error {
+func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 
 	subctx, subCancel := context.WithTimeout(ctx, 3*time.Second)
 	defer subCancel()
