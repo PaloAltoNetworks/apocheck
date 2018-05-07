@@ -34,7 +34,7 @@ func RegisterTest(t Test) {
 	if _, err := h.Write([]byte(t.Name + t.Description + t.Author)); err != nil {
 		panic(err)
 	}
-	t.ID = fmt.Sprintf("%x", h.Sum32())
+	t.id = fmt.Sprintf("%x", h.Sum32())
 
 	mainTestSuite[t.Name] = t
 }

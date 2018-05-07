@@ -5,52 +5,62 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io"
+	"os"
+	"runtime/debug"
 	"sync"
 	"time"
-
-	"github.com/aporeto-inc/underwater/bootstrap"
 
 	"github.com/aporeto-inc/addedeffect/apiutils"
 	"github.com/aporeto-inc/manipulate"
 	"github.com/aporeto-inc/manipulate/maniphttp"
+	"github.com/aporeto-inc/underwater/bootstrap"
 )
 
 type testRun struct {
 	ctx       context.Context
-	test      Test
 	durations []time.Duration
-	loggers   []io.ReadWriter
 	errs      []error
+	loggers   []io.ReadWriter
+	test      Test
+	testInfo  TestInfo
 }
 
 type testRunner struct {
+	api         string
+	concurrent  int
+	info        *bootstrap.Info
 	resultsChan chan testRun
 	sem         chan struct{}
-	api         string
-	tags        []string
+	setupErrs   chan error
+	status      map[string]testRun
 	stress      int
+	suite       testSuite
+	teardowns   chan TearDownFunction
 	tlsConfig   *tls.Config
-	info        *bootstrap.Info
 	verbose     bool
 }
 
 func newTestRunner(
+	suite testSuite,
 	api string,
 	capool *x509.CertPool,
 	cert tls.Certificate,
-	tags []string,
 	concurrent int,
 	stress int,
 	verbose bool,
 ) *testRunner {
 
 	return &testRunner{
+		api:         api,
+		concurrent:  concurrent,
 		resultsChan: make(chan testRun, concurrent*stress),
 		sem:         make(chan struct{}, concurrent),
-		api:         api,
-		tags:        tags,
+		setupErrs:   make(chan error),
+		status:      map[string]testRun{},
 		stress:      stress,
+		suite:       suite,
 		verbose:     verbose,
 		info: &bootstrap.Info{
 			BootstrapCert:    cert,
@@ -65,50 +75,94 @@ func newTestRunner(
 	}
 }
 
-func (r *testRunner) execute(ctx context.Context, suite testSuite, m manipulate.Manipulator) {
+func (r *testRunner) executeIteration(run testRun, m manipulate.Manipulator) {
 
-	for _, test := range suite {
+	var wg sync.WaitGroup
+
+	sem := make(chan struct{}, r.concurrent)
+
+	for i := 0; i < r.stress; i++ {
+
+		wg.Add(1)
+
+		select {
+		case sem <- struct{}{}:
+		case <-run.ctx.Done():
+			return
+		}
+
+		go func(iteration int) {
+
+			defer func() { wg.Done(); <-sem; r.resultsChan <- run }()
+
+			start := time.Now()
+			buf := &bytes.Buffer{}
+
+			run.testInfo.iteration = iteration
+			run.testInfo.writter = buf
+			run.loggers = append(run.loggers, buf)
+
+			err := run.test.Function(run.ctx, run.testInfo)
+			run.durations = append(run.durations, time.Since(start))
+
+			if err == nil {
+				run.errs = append(run.errs, nil)
+				return
+			}
+
+			r := recover()
+
+			if r == nil {
+				run.errs = append(run.errs, err)
+				return
+			}
+
+			if err, ok := r.(assestionError); ok {
+				run.errs = append(run.errs, err)
+				return
+			}
+
+			run.errs = append(run.errs, fmt.Errorf(fmt.Sprintf("Unhandled panic: %s\n%s", r, string(debug.Stack()))))
+		}(i)
+	}
+
+	wg.Wait()
+}
+
+func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
+
+	for _, test := range r.suite {
 
 		select {
 		case r.sem <- struct{}{}:
 		case <-ctx.Done():
-			break
+			return
 		}
 
 		go func(run testRun) {
 
-			defer func() { <-r.sem }()
+			var teardownFunc TearDownFunction
+			var err error
 
-			var wg sync.WaitGroup
-			l := &sync.Mutex{}
+			defer func() { r.teardowns <- teardownFunc; <-r.sem }()
 
-			for i := 0; i < r.stress; i++ {
-
-				wg.Add(1)
-
-				go func(iteration int) {
-
-					defer wg.Done()
-
-					start := time.Now()
-					buf := &bytes.Buffer{}
-					e := run.test.Function(ctx, buf, r.info, m, iteration)
-
-					l.Lock()
-					run.errs = append(run.errs, e)
-					run.loggers = append(run.loggers, buf)
-					run.durations = append(run.durations, time.Since(start))
-					l.Unlock()
-
-					r.resultsChan <- run
-				}(i)
+			if run.test.Setup != nil {
+				if run.testInfo.data, teardownFunc, err = run.test.Setup(run.ctx, run.testInfo); err != nil {
+					r.setupErrs <- fmt.Errorf("error during setup of '%s' (%s): %s", run.test.Name, run.test.id, err)
+					return
+				}
 			}
 
-			wg.Wait()
+			r.executeIteration(run, m)
 
 		}(testRun{
 			ctx:  ctx,
 			test: test,
+			testInfo: TestInfo{
+				testID:          test.id,
+				rootManipulator: m,
+				platformInfo:    r.info,
+			},
 		})
 	}
 }
@@ -124,30 +178,41 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 	}
 
 	r.info.Platform = pf
+	r.teardowns = make(chan TearDownFunction, len(suite))
 
-	go r.execute(
-		ctx,
-		suite,
-		maniphttp.NewHTTPManipulatorWithTLS(r.api, "", "", "", r.tlsConfig),
-	)
+	go r.execute(ctx, maniphttp.NewHTTPManipulatorWithTLS(r.api, "", "", "", r.tlsConfig))
 
-	status := map[string]testRun{}
-	var c int
+	var completed, terminated int
 
-	printStatus(suite, status, 0, r.stress)
+	printStatus(suite, r.status, 0, r.stress)
 
 	for {
 		select {
 
 		case run := <-r.resultsChan:
 
-			c++
-			status[run.test.Name] = run
+			completed++
 
-			printStatus(suite, status, c, r.stress)
+			r.status[run.test.Name] = run
+			printStatus(suite, r.status, completed, r.stress)
 
-			if c == len(suite)*r.stress {
-				printResults(status, r.verbose)
+			if r.isTerminated(suite, completed, terminated) {
+				return nil
+			}
+
+		case se := <-r.setupErrs:
+			fmt.Fprintln(os.Stderr, se)
+			return nil
+
+		case td := <-r.teardowns:
+
+			terminated++
+
+			if td != nil {
+				td()
+			}
+
+			if r.isTerminated(suite, completed, terminated) {
 				return nil
 			}
 
@@ -155,4 +220,14 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 			return ctx.Err()
 		}
 	}
+}
+
+func (r *testRunner) isTerminated(suite testSuite, completed, terminated int) bool {
+
+	if terminated == len(suite) && completed == len(suite)*r.stress {
+		printResults(r.status, r.verbose)
+		return true
+	}
+
+	return false
 }

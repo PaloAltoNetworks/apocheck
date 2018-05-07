@@ -37,7 +37,7 @@ func (s testSuite) testsWithIDs(ids ...string) testSuite {
 
 	for _, t := range s {
 		for _, id := range ids {
-			if id == t.ID {
+			if id == t.id {
 				ts[t.Name] = t
 			}
 		}

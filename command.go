@@ -105,10 +105,10 @@ func NewCommand(
 			}
 
 			return newTestRunner(
+				suite,
 				viper.GetString("api"),
 				certPool,
 				cert,
-				viper.GetStringSlice("categories"),
 				viper.GetInt("concurrent"),
 				viper.GetInt("stress"),
 				viper.GetBool("verbose"),

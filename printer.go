@@ -74,7 +74,7 @@ func printResults(status map[string]testRun, showOnSuccess bool) {
 		}
 
 		fmt.Println()
-		fmt.Println(goterm.Bold(goterm.Color(fmt.Sprintf("[%s] %s", run.test.ID, n), color)))
+		fmt.Println(goterm.Bold(goterm.Color(fmt.Sprintf("[%s] %s", run.test.id, n), color)))
 		fmt.Println()
 		fmt.Println(wordwrap.WrapString(fmt.Sprintf("%s — %s", run.test.Description, run.test.Author), 80))
 		fmt.Println()
