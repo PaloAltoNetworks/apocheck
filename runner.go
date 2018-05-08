@@ -7,10 +7,11 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
-	"os"
 	"runtime/debug"
 	"sync"
 	"time"
+
+	"github.com/buger/goterm"
 
 	"github.com/aporeto-inc/addedeffect/apiutils"
 	"github.com/aporeto-inc/manipulate"
@@ -27,12 +28,20 @@ type testRun struct {
 	testInfo  TestInfo
 }
 
+type testResult struct {
+	err       error
+	reader    io.Reader
+	duration  time.Duration
+	test      Test
+	iteration int
+	stack     []byte
+}
+
 type testRunner struct {
 	api         string
 	concurrent  int
 	info        *bootstrap.Info
 	resultsChan chan testRun
-	sem         chan struct{}
 	setupErrs   chan error
 	status      map[string]testRun
 	stress      int
@@ -56,7 +65,6 @@ func newTestRunner(
 		api:         api,
 		concurrent:  concurrent,
 		resultsChan: make(chan testRun, concurrent*stress),
-		sem:         make(chan struct{}, concurrent),
 		setupErrs:   make(chan error),
 		status:      map[string]testRun{},
 		stress:      stress,
@@ -75,85 +83,130 @@ func newTestRunner(
 	}
 }
 
-func (r *testRunner) executeIteration(run testRun, m manipulate.Manipulator) {
-
-	var wg sync.WaitGroup
+func (r *testRunner) executeIteration(ctx context.Context, test Test, m manipulate.Manipulator, data interface{}, results chan testResult) {
 
 	sem := make(chan struct{}, r.concurrent)
 
 	for i := 0; i < r.stress; i++ {
 
-		wg.Add(1)
-
 		select {
 		case sem <- struct{}{}:
-		case <-run.ctx.Done():
+		case <-ctx.Done():
 			return
 		}
 
-		go func(iteration int) {
+		go func(t Test, iteration int) {
 
-			defer func() { wg.Done(); <-sem; r.resultsChan <- run }()
+			defer func() { <-sem }()
 
-			start := time.Now()
 			buf := &bytes.Buffer{}
 
-			run.testInfo.iteration = iteration
-			run.testInfo.writter = buf
-			run.loggers = append(run.loggers, buf)
-
-			err := run.test.Function(run.ctx, run.testInfo)
-			run.durations = append(run.durations, time.Since(start))
-
-			if err == nil {
-				run.errs = append(run.errs, nil)
-				return
+			ti := testResult{
+				test:      t,
+				reader:    buf,
+				iteration: iteration,
 			}
 
-			r := recover()
+			defer func() {
 
-			if r == nil {
-				run.errs = append(run.errs, err)
-				return
-			}
+				defer func() { results <- ti }()
 
-			if err, ok := r.(assestionError); ok {
-				run.errs = append(run.errs, err)
-				return
-			}
+				// recover remote code.
+				r := recover()
+				if r == nil {
+					return
+				}
 
-			run.errs = append(run.errs, fmt.Errorf(fmt.Sprintf("Unhandled panic: %s\n%s", r, string(debug.Stack()))))
-		}(i)
+				err, ok := r.(assestionError)
+				if ok {
+					ti.err = err
+					return
+				}
+
+				ti.err = fmt.Errorf("Unhandled panic: %s", r)
+				ti.stack = debug.Stack()
+			}()
+
+			start := time.Now()
+			ti.err = test.Function(ctx, TestInfo{
+				testID:          test.id,
+				writter:         buf,
+				iteration:       iteration,
+				rootManipulator: m,
+				platformInfo:    r.info,
+				data:            data,
+			})
+
+			ti.duration = time.Since(start)
+
+		}(test, i)
 	}
-
-	wg.Wait()
 }
 
 func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 
-	for _, test := range r.suite {
+	sem := make(chan struct{}, r.concurrent)
+
+	var wg sync.WaitGroup
+
+	for _, test := range r.suite.sorted() {
+
+		wg.Add(1)
 
 		select {
-		case r.sem <- struct{}{}:
+		case sem <- struct{}{}:
 		case <-ctx.Done():
 			return
 		}
 
 		go func(run testRun) {
 
-			var teardownFunc TearDownFunction
+			defer func() { wg.Done(); <-sem }()
+
+			var data interface{}
+			var td TearDownFunction
 			var err error
+			hasSetup := run.test.Setup != nil
 
-			defer func() { r.teardowns <- teardownFunc; <-r.sem }()
+			if hasSetup {
 
-			if run.test.Setup != nil {
-				if run.testInfo.data, teardownFunc, err = run.test.Setup(run.ctx, run.testInfo); err != nil {
-					r.setupErrs <- fmt.Errorf("error during setup of '%s' (%s): %s", run.test.Name, run.test.id, err)
+				defer func() {
+					if r := recover(); r != nil {
+						printSetupError(run.test, r)
+					}
+				}()
+
+				data, td, err = run.test.Setup(run.ctx, run.testInfo)
+
+				if err != nil {
+					fmt.Println(goterm.Color(fmt.Sprintf("error during setup of '%s' (%s): %s", run.test.Name, run.test.id, err), goterm.RED))
 					return
+				}
+
+				if td != nil {
+					defer td()
 				}
 			}
 
-			r.executeIteration(run, m)
+			resultsCh := make(chan testResult)
+
+			go r.executeIteration(ctx, run.test, m, data, resultsCh)
+
+			var results []testResult
+
+			for {
+				select {
+				case res := <-resultsCh:
+					results = append(results, res)
+
+					if len(results) == r.stress {
+						printResults(run.test, results, r.verbose)
+						return
+					}
+				case <-ctx.Done():
+					return
+				}
+			}
 
 		}(testRun{
 			ctx:  ctx,
@@ -165,6 +218,8 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 			},
 		})
 	}
+
+	wg.Wait()
 }
 
 func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
@@ -180,54 +235,7 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 	r.info.Platform = pf
 	r.teardowns = make(chan TearDownFunction, len(suite))
 
-	go r.execute(ctx, maniphttp.NewHTTPManipulatorWithTLS(r.api, "", "", "", r.tlsConfig))
+	r.execute(ctx, maniphttp.NewHTTPManipulatorWithTLS(r.api, "", "", "", r.tlsConfig))
 
-	var completed, terminated int
-
-	printStatus(suite, r.status, 0, r.stress)
-
-	for {
-		select {
-
-		case run := <-r.resultsChan:
-
-			completed++
-
-			r.status[run.test.Name] = run
-			printStatus(suite, r.status, completed, r.stress)
-
-			if r.isTerminated(suite, completed, terminated) {
-				return nil
-			}
-
-		case se := <-r.setupErrs:
-			fmt.Fprintln(os.Stderr, se)
-			return nil
-
-		case td := <-r.teardowns:
-
-			terminated++
-
-			if td != nil {
-				td()
-			}
-
-			if r.isTerminated(suite, completed, terminated) {
-				return nil
-			}
-
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
-}
-
-func (r *testRunner) isTerminated(suite testSuite, completed, terminated int) bool {
-
-	if terminated == len(suite) && completed == len(suite)*r.stress {
-		printResults(r.status, r.verbose)
-		return true
-	}
-
-	return false
+	return nil
 }

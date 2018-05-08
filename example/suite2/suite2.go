@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
-	"time"
+
+	"github.com/smartystreets/goconvey/convey"
 
 	"github.com/aporeto-inc/apocheck"
 )
@@ -17,8 +18,8 @@ func init() {
 		Tags:        []string{"suite2"},
 		Function: func(ctx context.Context, t apocheck.TestInfo) error {
 
-			<-time.After(time.Duration(rand.Intn(3)) * time.Second)
-			if rand.Intn(10) <= 8 {
+			// <-time.After(time.Duration(rand.Intn(3)) * time.Second)
+			if rand.Intn(10) <= 1000 {
 				return nil
 			}
 
@@ -37,16 +38,12 @@ func init() {
 		Tags:        []string{"suite2"},
 		Function: func(ctx context.Context, t apocheck.TestInfo) error {
 
-			<-time.After(time.Duration(rand.Intn(3)) * time.Second)
-			if rand.Intn(10) <= 8 {
-				return nil
-			}
+			// <-time.After(3 * time.Second)
+			fmt.Fprintln(t, "trying stuff")
 
-			fmt.Fprintln(t, "start kube-squall")
-			fmt.Fprintln(t, "start enforcerd")
-			fmt.Fprintln(t, "send traffic")
+			apocheck.Assert(t, "unable to reach eventual consistency", "panic", convey.ShouldEqual, "ok")
 
-			return fmt.Errorf("Unable to reach eventual consistency")
+			return nil
 		},
 	})
 }

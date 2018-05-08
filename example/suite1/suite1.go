@@ -2,8 +2,6 @@ package suite1
 
 import (
 	"context"
-	"math/rand"
-	"time"
 
 	"github.com/aporeto-inc/apocheck"
 )
@@ -17,7 +15,7 @@ func init() {
 		Tags:        []string{"suite1", "namespaces"},
 		Function: func(ctx context.Context, t apocheck.TestInfo) error {
 
-			<-time.After(time.Duration(rand.Intn(3)) * time.Second)
+			// <-time.After(time.Duration(rand.Intn(3)) * time.Second)
 			return nil
 		},
 	})
@@ -27,9 +25,12 @@ func init() {
 		Description: "This test creates a processing unit with attribute type missing.",
 		Author:      "Antoine",
 		Tags:        []string{"b", "c"},
+		Setup: func(ctx context.Context, t apocheck.TestInfo) (interface{}, apocheck.TearDownFunction, error) {
+			panic("panic!")
+		},
 		Function: func(ctx context.Context, t apocheck.TestInfo) error {
 
-			<-time.After(time.Duration(rand.Intn(3)) * time.Second)
+			// <-time.After(time.Duration(rand.Intn(3)) * time.Second)
 			return nil
 		},
 	})

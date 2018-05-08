@@ -3,133 +3,124 @@ package apocheck
 import (
 	"fmt"
 	"io/ioutil"
+	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/mitchellh/go-wordwrap"
-
 	"github.com/buger/goterm"
+	wordwrap "github.com/mitchellh/go-wordwrap"
 )
 
-func printStatus(suite testSuite, status map[string]testRun, completed int, stress int) {
+var printLock = &sync.Mutex{}
 
-	ntests := len(suite) * stress
-	offset := 1
+func printSetupError(test Test, recovery interface{}) {
 
-	var s string
+	printLock.Lock()
+	defer printLock.Unlock()
 
-	for i, t := range suite.sorted() {
+	fmt.Println()
+	fmt.Printf("%s\n",
+		goterm.Bold(
+			goterm.Color(
+				fmt.Sprintf("%s FAIL %s",
+					test.id,
+					test.Name,
+				),
+				goterm.YELLOW,
+			),
+		),
+	)
 
-		run, ok := status[t.Name]
-		if !ok || len(run.errs) < stress {
-			s = "pending"
-		} else if hasErrors(run.errs) {
-			s = goterm.Color("failure", goterm.RED)
-		} else {
-			s = goterm.Color("success", goterm.GREEN)
-		}
-
-		if _, err := goterm.Printf("[%s] (%d/%d) %s", s, len(run.errs), stress, t.Name); err != nil {
-			panic(err)
-		}
-
-		if ok && len(run.errs) == stress {
-			if _, err := goterm.Print(goterm.Color(fmt.Sprintf(" - avg: %s", averageTime(run.durations)), goterm.BLUE)); err != nil {
-				panic(err)
-			}
-		}
-
-		if i < len(suite)-1 {
-			if _, err := goterm.Printf("\n"); err != nil {
-				panic(err)
-			}
-		}
-	}
-
-	if completed < ntests {
-		offset++
-		if _, err := goterm.Printf("\n\n(%d/%d)", completed, ntests); err != nil {
-			panic(err)
-		}
-	}
-
-	goterm.Flush()
-	goterm.MoveCursorUp(len(suite) + offset)
+	fmt.Println()
+	fmt.Println(goterm.Color("panic during setup", goterm.RED))
+	fmt.Println()
+	fmt.Println(string(debug.Stack()))
+	fmt.Println()
 }
+func printResults(test Test, results []testResult, showOnSuccess bool) {
 
-func printResults(status map[string]testRun, showOnSuccess bool) {
+	printLock.Lock()
+	defer printLock.Unlock()
 
 	var failures int
-	for n, run := range status {
 
-		failed := hasErrors(run.errs)
-		if !failed && !showOnSuccess {
+	failed := hasErrors(results)
+	if !failed && !showOnSuccess {
+		fmt.Printf("%s\n",
+			goterm.Color(
+				fmt.Sprintf("%s PASS %s %s",
+					test.id,
+					test.Name,
+					goterm.Color(fmt.Sprintf("it: %d, avg: %s", len(results), averageTime(results)), goterm.BLUE),
+				),
+				goterm.GREEN,
+			),
+		)
+		return
+	}
+
+	color := goterm.GREEN
+	if failed {
+		failures++
+		color = goterm.YELLOW
+	}
+
+	fmt.Println()
+	fmt.Println(goterm.Bold(goterm.Color(fmt.Sprintf("%s FAIL %s", test.id, test.Name), color)))
+	fmt.Println()
+	fmt.Println(wordwrap.WrapString(fmt.Sprintf("%s — %s", test.Description, test.Author), 80))
+	fmt.Println()
+
+	for _, result := range results {
+
+		if result.err == nil && !showOnSuccess {
 			continue
 		}
 
-		color := goterm.GREEN
-		if failed {
-			failures++
-			color = goterm.YELLOW
+		data, err := ioutil.ReadAll(result.reader)
+		if err != nil {
+			panic(err)
 		}
 
-		fmt.Println()
-		fmt.Println(goterm.Bold(goterm.Color(fmt.Sprintf("[%s] %s", run.test.id, n), color)))
-		fmt.Println()
-		fmt.Println(wordwrap.WrapString(fmt.Sprintf("%s — %s", run.test.Description, run.test.Author), 80))
-		fmt.Println()
-
-		for i, log := range run.loggers {
-
-			if run.errs[i] == nil && !showOnSuccess {
-				continue
-			}
-
-			data, err := ioutil.ReadAll(log)
-			if err != nil {
-				panic(err)
-			}
-
-			fmt.Printf("iteration %d log after %s\n", i, run.durations[i].Round(time.Millisecond))
-			if len(data) > 0 {
-				fmt.Printf("\n  %s\n", strings.Replace(string(data), "\n", "\n  ", -1))
-			} else {
-				fmt.Println("\n  <no logs>")
-			}
-
-			if failed {
-				fmt.Println(goterm.Color(fmt.Sprintf("  error: %s", run.errs[i]), goterm.RED))
-			}
+		fmt.Println(goterm.Color(fmt.Sprintf("iteration %d log after %s\n", result.iteration+1, result.duration), goterm.MAGENTA))
+		if len(data) > 0 {
+			fmt.Printf("\n  %s\n", strings.Replace(string(data), "\n", "\n  ", -1))
+		} else {
+			fmt.Println()
+			fmt.Println("  <no log>")
 			fmt.Println()
 		}
-	}
 
-	if failures == 0 {
-		fmt.Printf("\n%s\n", goterm.Color("All tests passed", goterm.GREEN))
-	} else {
-		var plural string
-		if failures > 1 {
-			plural = "s"
+		if failed {
+			fmt.Println(goterm.Color(fmt.Sprintf("  error: %s", result.err), goterm.RED))
 		}
-		fmt.Printf("\n%s\n", goterm.Color(fmt.Sprintf("%d test%s failed", failures, plural), goterm.RED))
+
+		if len(result.stack) > 0 {
+			fmt.Println()
+			fmt.Println("  Test panic:")
+			fmt.Println()
+			fmt.Println(string(result.stack))
+		}
+		fmt.Println()
 	}
 }
 
-func averageTime(durations []time.Duration) time.Duration {
+func averageTime(results []testResult) time.Duration {
 
 	var total int
-	for _, d := range durations {
-		total += int(d)
+	for _, r := range results {
+		total += int(r.duration)
 	}
 
-	return time.Duration(total / len(durations)).Round(1 * time.Millisecond)
+	return time.Duration(total / len(results)).Round(1 * time.Millisecond).Round(time.Millisecond)
 }
 
-func hasErrors(errs []error) bool {
+func hasErrors(results []testResult) bool {
 
-	for _, e := range errs {
+	for _, r := range results {
 
-		if e != nil {
+		if r.err != nil {
 			return true
 		}
 	}

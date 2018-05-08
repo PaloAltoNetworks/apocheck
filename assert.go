@@ -42,6 +42,6 @@ func Assert(w io.Writer, message string, actual interface{}, f func(interface{},
 		panic(r)
 	}
 
-	fmt.Fprintf(w, goterm.Color(fmt.Sprintf(" - [PASS] %s", message), goterm.GREEN)) // nolint
+	fmt.Fprintf(w, goterm.Color(fmt.Sprintf("- [PASS] %s", message), goterm.GREEN)) // nolint
 	fmt.Fprintln(w)
 }
