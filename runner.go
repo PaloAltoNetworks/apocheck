@@ -11,8 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/buger/goterm"
-
 	"github.com/aporeto-inc/addedeffect/apiutils"
 	"github.com/aporeto-inc/manipulate"
 	"github.com/aporeto-inc/manipulate/maniphttp"
@@ -165,21 +163,21 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 
 			var data interface{}
 			var td TearDownFunction
-			var err error
 			hasSetup := run.test.Setup != nil
 
 			if hasSetup {
 
 				defer func() {
 					if r := recover(); r != nil {
-						printSetupError(run.test, r)
+						printSetupError(run.test, r, nil)
 					}
 				}()
 
+				var err error
 				data, td, err = run.test.Setup(run.ctx, run.testInfo)
 
 				if err != nil {
-					fmt.Println(goterm.Color(fmt.Sprintf("error during setup of '%s' (%s): %s", run.test.Name, run.test.id, err), goterm.RED))
+					printSetupError(run.test, nil, err)
 					return
 				}
 

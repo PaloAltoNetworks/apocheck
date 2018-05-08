@@ -14,7 +14,7 @@ import (
 
 var printLock = &sync.Mutex{}
 
-func printSetupError(test Test, recovery interface{}) {
+func printSetupError(test Test, recovery interface{}, err error) {
 
 	printLock.Lock()
 	defer printLock.Unlock()
@@ -33,11 +33,20 @@ func printSetupError(test Test, recovery interface{}) {
 	)
 
 	fmt.Println()
-	fmt.Println(goterm.Color("panic during setup", goterm.RED))
+	fmt.Println(goterm.Color("setup function:", goterm.MAGENTA))
 	fmt.Println()
-	fmt.Println(string(debug.Stack()))
+
+	if recovery != nil {
+		fmt.Println(string(debug.Stack()))
+	}
+
+	if err != nil {
+		fmt.Println(goterm.Color(fmt.Sprintf("  error: %s", err), goterm.RED))
+	}
+
 	fmt.Println()
 }
+
 func printResults(test Test, results []testResult, showOnSuccess bool) {
 
 	printLock.Lock()
