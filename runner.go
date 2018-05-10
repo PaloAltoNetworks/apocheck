@@ -36,23 +36,27 @@ type testResult struct {
 }
 
 type testRunner struct {
-	api         string
-	concurrent  int
-	info        *bootstrap.Info
-	resultsChan chan testRun
-	setupErrs   chan error
-	status      map[string]testRun
-	stress      int
-	suite       testSuite
-	teardowns   chan TearDownFunction
-	tlsConfig   *tls.Config
-	verbose     bool
+	privateAPI       string
+	publicAPI        string
+	concurrent       int
+	info             *bootstrap.Info
+	resultsChan      chan testRun
+	setupErrs        chan error
+	status           map[string]testRun
+	stress           int
+	suite            testSuite
+	teardowns        chan TearDownFunction
+	privateTLSConfig *tls.Config
+	publicTLSConfig  *tls.Config
+	verbose          bool
 }
 
 func newTestRunner(
 	suite testSuite,
-	api string,
-	capool *x509.CertPool,
+	privateAPI string,
+	privateCAPool *x509.CertPool,
+	publicAPI string,
+	publicCAPool *x509.CertPool,
 	cert tls.Certificate,
 	concurrent int,
 	stress int,
@@ -60,7 +64,8 @@ func newTestRunner(
 ) *testRunner {
 
 	return &testRunner{
-		api:         api,
+		privateAPI:  privateAPI,
+		publicAPI:   publicAPI,
 		concurrent:  concurrent,
 		resultsChan: make(chan testRun, concurrent*stress),
 		setupErrs:   make(chan error),
@@ -70,12 +75,15 @@ func newTestRunner(
 		verbose:     verbose,
 		info: &bootstrap.Info{
 			BootstrapCert:    cert,
-			RootCAPool:       capool,
-			SystemCAPool:     capool,
+			RootCAPool:       publicCAPool,
+			SystemCAPool:     privateCAPool,
 			SystemClientCert: cert,
 		},
-		tlsConfig: &tls.Config{
-			RootCAs:      capool,
+		publicTLSConfig: &tls.Config{
+			RootCAs: publicCAPool,
+		},
+		privateTLSConfig: &tls.Config{
+			RootCAs:      privateCAPool,
 			Certificates: []tls.Certificate{cert},
 		},
 	}
@@ -225,7 +233,7 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 	subctx, subCancel := context.WithTimeout(ctx, 3*time.Second)
 	defer subCancel()
 
-	pf, err := apiutils.GetConfig(subctx, r.api, r.tlsConfig)
+	pf, err := apiutils.GetConfig(subctx, r.privateAPI, r.privateTLSConfig)
 	if err != nil {
 		return err
 	}
@@ -233,7 +241,7 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 	r.info.Platform = pf
 	r.teardowns = make(chan TearDownFunction, len(suite))
 
-	r.execute(ctx, maniphttp.NewHTTPManipulatorWithTLS(r.api, "", "", "", r.tlsConfig))
+	r.execute(ctx, maniphttp.NewHTTPManipulatorWithTLS(r.privateAPI, "", "", "", r.privateTLSConfig))
 
 	return nil
 }

@@ -55,11 +55,18 @@ func printResults(test Test, results []testResult, showOnSuccess bool) {
 	var failures int
 
 	failed := hasErrors(results)
+
+	resultString := "FAIL"
+	if !failed {
+		resultString = "PASS"
+	}
+
 	if !failed && !showOnSuccess {
 		fmt.Printf("%s\n",
 			goterm.Color(
-				fmt.Sprintf("%s PASS %s %s",
+				fmt.Sprintf("%s %s %s %s",
 					test.id,
+					resultString,
 					test.Name,
 					goterm.Color(fmt.Sprintf("it: %d, avg: %s", len(results), averageTime(results)), goterm.BLUE),
 				),
@@ -76,7 +83,7 @@ func printResults(test Test, results []testResult, showOnSuccess bool) {
 	}
 
 	fmt.Println()
-	fmt.Println(goterm.Bold(goterm.Color(fmt.Sprintf("%s FAIL %s", test.id, test.Name), color)))
+	fmt.Println(goterm.Bold(goterm.Color(fmt.Sprintf("%s %s %s", test.id, resultString, test.Name), color)))
 	fmt.Println()
 	fmt.Println(wordwrap.WrapString(fmt.Sprintf("%s — %s", test.Description, test.Author), 80))
 	fmt.Println()

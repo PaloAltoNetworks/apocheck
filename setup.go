@@ -2,6 +2,7 @@ package apocheck
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"strings"
 	"time"
@@ -56,19 +57,19 @@ func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespa
 }
 
 // CreateTestAccount creates an account using the given TestInfo and returns an authenticated manipulator.
-func CreateTestAccount(ctx context.Context, t TestInfo) (manipulate.Manipulator, func() error, error) {
+func CreateTestAccount(ctx context.Context, t TestInfo) (manipulate.Manipulator, *gaia.Account, func() error, error) {
 
-	return CreateAccount(ctx, t.RootManipulator(), t.Account("Euphrates123#", "integ@aporeto.com"))
+	return CreateAccount(ctx, t.RootManipulator(), t.Account("Euphrates123#"))
 }
 
 // CreateAccount creates the given account and returns an authenticated manipulator.
-func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.Account) (manipulate.Manipulator, func() error, error) {
+func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.Account) (manipulate.Manipulator, *gaia.Account, func() error, error) {
 
 	// Keep a reference as create will erase it.
 	password := account.Password
 
 	if err := m.Create(nil, account); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	api := maniphttp.ExtractEndpoint(m)
@@ -81,10 +82,30 @@ func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.
 
 	token, err := c.IssueFromVince(subctx, account.Name, password, "", 5*time.Minute)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	return maniphttp.NewHTTPManipulatorWithTLS(api, "Bearer", token, "/"+account.Name, tlsConfig),
+		account,
 		func() error { return m.Delete(nil, account) },
 		nil
+}
+
+// PublicManipulator returns a manipulator facing plublic API from the given manipulator.
+func PublicManipulator(t TestInfo, m manipulate.Manipulator, namespace string) manipulate.Manipulator {
+
+	tlsConfig := maniphttp.ExtractTLSConfig(m)
+	tlsConfig.Certificates = nil
+	tlsConfig.RootCAs = t.PlatformInfo().RootCAPool
+
+	return PublicManipulatorWithTLSConfig(t, m, namespace, tlsConfig)
+}
+
+// PublicManipulatorWithTLSConfig returns a manipulator facing plublic API from the given manipulator.
+func PublicManipulatorWithTLSConfig(t TestInfo, m manipulate.Manipulator, namespace string, tlsConfig *tls.Config) manipulate.Manipulator {
+
+	api := t.PlatformInfo().Platform["public-api-external"]
+	username, token := maniphttp.ExtractCredentials(m)
+
+	return maniphttp.NewHTTPManipulatorWithTLS(api, username, token, namespace, tlsConfig)
 }

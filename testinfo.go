@@ -20,12 +20,12 @@ type TestInfo struct {
 }
 
 // Account returns a gaia Account object that can be used for the test.
-func (t TestInfo) Account(password string, email string) *gaia.Account {
+func (t TestInfo) Account(password string) *gaia.Account {
 
 	return &gaia.Account{
 		Name:     t.AccountName(),
 		Password: password,
-		Email:    email,
+		Email:    fmt.Sprintf("user@%s.com", t.AccountName()),
 		LDAPConnSecurityProtocol: gaia.AccountLDAPConnSecurityProtocolTLS,
 	}
 }

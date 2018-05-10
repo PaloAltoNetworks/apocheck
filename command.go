@@ -82,13 +82,19 @@ func NewCommand(
 				return err
 			}
 
-			data, err := ioutil.ReadFile(viper.GetString("cacert"))
+			data, err := ioutil.ReadFile(viper.GetString("cacert-private"))
 			if err != nil {
 				return err
 			}
+			certPoolPrivate := x509.NewCertPool()
+			certPoolPrivate.AppendCertsFromPEM(data)
 
-			certPool := x509.NewCertPool()
-			certPool.AppendCertsFromPEM(data)
+			data, err = ioutil.ReadFile(viper.GetString("cacert-public"))
+			if err != nil {
+				return err
+			}
+			publicPoolPrivate, _ := x509.SystemCertPool()
+			publicPoolPrivate.AppendCertsFromPEM(data)
 
 			ctx, cancel := context.WithTimeout(context.Background(), viper.GetDuration("limit"))
 			defer cancel()
@@ -106,8 +112,10 @@ func NewCommand(
 
 			return newTestRunner(
 				suite,
-				viper.GetString("api"),
-				certPool,
+				viper.GetString("api-private"),
+				certPoolPrivate,
+				viper.GetString("api-public"),
+				publicPoolPrivate,
 				cert,
 				viper.GetInt("concurrent"),
 				viper.GetInt("stress"),
@@ -119,11 +127,13 @@ func NewCommand(
 	cmdRunTests.Flags().DurationP("limit", "l", 5*time.Minute, "Execution time limit.")
 	cmdRunTests.Flags().IntP("concurrent", "c", 20, "Max number of concurrent tests.")
 	cmdRunTests.Flags().IntP("stress", "s", 1, "Number of time to run each time in parallel.")
-	cmdRunTests.Flags().String("cacert", "", "Path to the api ca certificate")
+	cmdRunTests.Flags().String("cacert-private", "", "Path to the private api ca certificate")
+	cmdRunTests.Flags().String("cacert-public", "", "Path to the public api ca certificate")
 	cmdRunTests.Flags().String("cert", "", "Path to client certificate")
 	cmdRunTests.Flags().String("key-pass", "", "Password for the certificate key")
 	cmdRunTests.Flags().String("key", "", "Path to client certificate key")
-	cmdRunTests.Flags().StringP("api", "a", "https://localhost:4443", "Address of the api gateway")
+	cmdRunTests.Flags().String("api-private", "https://localhost:4444", "Address of the private api gateway")
+	cmdRunTests.Flags().String("api-public", "https://localhost:4443", "Address of the public api gateway")
 	cmdRunTests.Flags().StringSliceP("id", "i", nil, "Only run tests with the given identifier")
 	cmdRunTests.Flags().StringSliceP("tag", "t", nil, "Only run tests with the given tags")
 
