@@ -104,8 +104,7 @@ func PublicManipulator(t TestInfo, m manipulate.Manipulator, namespace string) m
 // PublicManipulatorWithTLSConfig returns a manipulator facing plublic API from the given manipulator.
 func PublicManipulatorWithTLSConfig(t TestInfo, m manipulate.Manipulator, namespace string, tlsConfig *tls.Config) manipulate.Manipulator {
 
-	api := t.PlatformInfo().Platform["public-api-external"]
 	username, token := maniphttp.ExtractCredentials(m)
 
-	return maniphttp.NewHTTPManipulatorWithTLS(api, username, token, namespace, tlsConfig)
+	return maniphttp.NewHTTPManipulatorWithTLS(t.PublicAPI(), username, token, namespace, tlsConfig)
 }

@@ -1,6 +1,7 @@
 package apocheck
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 
@@ -38,8 +39,31 @@ func (t TestInfo) TestNamespace(iteration int) string {
 // AccountName returns a unique account name that can be used by this test.
 func (t TestInfo) AccountName() string { return fmt.Sprintf("account-%s", t.testID) }
 
+// AccountNamespace returns the account namespace that can be used by this test.
+func (t TestInfo) AccountNamespace() string { return fmt.Sprintf("/account-%s", t.testID) }
+
+// PublicAPI returns the public api url.
+func (t TestInfo) PublicAPI() string { return t.platformInfo.Platform["public-api-external"] }
+
+// PrivateAPI returns the private api url.
+func (t TestInfo) PrivateAPI() string { return t.platformInfo.Platform["private-api-external"] }
+
 // SetupInfo returns the eventual object stored by the Setup function.
 func (t TestInfo) SetupInfo() interface{} { return t.data }
+
+// PublicTLSConfig returns a tls config that can be used to connect to public API.
+func (t TestInfo) PublicTLSConfig() *tls.Config {
+	return &tls.Config{
+		RootCAs: t.platformInfo.RootCAPool,
+	}
+}
+
+// PrivateTLSConfig returns a tls config that can be used to connect to private API.
+func (t TestInfo) PrivateTLSConfig() *tls.Config {
+	return &tls.Config{
+		RootCAs: t.platformInfo.SystemCAPool,
+	}
+}
 
 // Iteration returns the test iteration number.
 func (t TestInfo) Iteration() int { return t.iteration }

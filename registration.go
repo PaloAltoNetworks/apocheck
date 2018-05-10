@@ -30,8 +30,8 @@ func RegisterTest(t Test) {
 		panic("test is missing tags")
 	}
 
-	h := fnv.New32a()
-	if _, err := h.Write([]byte(t.Name + t.Description + t.Author)); err != nil {
+	h := fnv.New32()
+	if _, err := h.Write([]byte(t.Name + t.Description + t.Author + "hey")); err != nil {
 		panic(err)
 	}
 	t.id = fmt.Sprintf("%x", h.Sum32())
