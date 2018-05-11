@@ -37,6 +37,7 @@ func printSetupError(test Test, recovery interface{}, err error) {
 	fmt.Println()
 
 	if recovery != nil {
+		fmt.Println("panic:", recovery)
 		fmt.Println(string(debug.Stack()))
 	}
 
