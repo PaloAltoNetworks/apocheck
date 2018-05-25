@@ -18,6 +18,7 @@ type TestInfo struct {
 	writter         io.Writer
 	rootManipulator manipulate.Manipulator
 	platformInfo    *bootstrap.Info
+	Config          string
 }
 
 // Account returns a gaia Account object that can be used for the test.
