@@ -109,12 +109,17 @@ func NewCommand(
 
 			tags := viper.GetStringSlice("tag")
 			ids := viper.GetStringSlice("id")
+			variants:=viper.GetStringSlice("variant")
 			if len(tags) > 0 {
 				suite = mainTestSuite.testsWithTags(tags...)
 			}
 			if len(ids) > 0 {
 				suite = mainTestSuite.testsWithIDs(ids...)
 			}
+			if len(variants) > 0 {
+				suite = mainTestSuite.testsWithVariants(variants...)
+			}
+
 
 			return newTestRunner(
 				suite,
@@ -148,6 +153,7 @@ func NewCommand(
 	cmdRunTests.Flags().String("config", "", "Server Configuration")
 	cmdRunTests.Flags().StringSliceP("id", "i", nil, "Only run tests with the given identifier")
 	cmdRunTests.Flags().StringSliceP("tag", "t", nil, "Only run tests with the given tags")
+	cmdRunTests.Flags().StringSliceP("variant", "v", nil, "Only run tests with the given variant")
 
 	rootCmd.AddCommand(
 		versionCmd,

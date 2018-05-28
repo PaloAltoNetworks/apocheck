@@ -28,6 +28,27 @@ func (s testSuite) testsWithTags(tags ...string) testSuite {
 	return ts
 }
 
+func (s testSuite) testsWithVariants(variants ...string) testSuite {
+
+	if len(variants) == 0 {
+		return s
+	}
+
+	ts := testSuite{}
+
+	for _, t := range s {
+		for _, c := range t.Variants {
+			for _, wc := range variants {
+				if wc == c {
+					ts[t.Name] = t
+				}
+			}
+		}
+	}
+
+	return ts
+}
+
 func (s testSuite) testsWithIDs(ids ...string) testSuite {
 	if len(ids) == 0 {
 		return s
