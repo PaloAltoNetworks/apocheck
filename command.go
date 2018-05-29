@@ -120,6 +120,7 @@ func NewCommand(
 				viper.GetInt("concurrent"),
 				viper.GetInt("stress"),
 				viper.GetBool("verbose"),
+				viper.GetString("config"),
 			).Run(ctx, suite)
 		},
 	}
@@ -134,6 +135,7 @@ func NewCommand(
 	cmdRunTests.Flags().String("key", "", "Path to client certificate key")
 	cmdRunTests.Flags().String("api-private", "https://localhost:4444", "Address of the private api gateway")
 	cmdRunTests.Flags().String("api-public", "https://localhost:4443", "Address of the public api gateway")
+	cmdRunTests.Flags().String("config", "", "Test Configuration")
 	cmdRunTests.Flags().StringSliceP("id", "i", nil, "Only run tests with the given identifier")
 	cmdRunTests.Flags().StringSliceP("tag", "t", nil, "Only run tests with the given tags")
 

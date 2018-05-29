@@ -49,6 +49,7 @@ type testRunner struct {
 	privateTLSConfig *tls.Config
 	publicTLSConfig  *tls.Config
 	verbose          bool
+	config           string
 }
 
 func newTestRunner(
@@ -61,6 +62,7 @@ func newTestRunner(
 	concurrent int,
 	stress int,
 	verbose bool,
+	config string,
 ) *testRunner {
 
 	return &testRunner{
@@ -86,6 +88,7 @@ func newTestRunner(
 			RootCAs:      privateCAPool,
 			Certificates: []tls.Certificate{cert},
 		},
+		config: config,
 	}
 }
 
@@ -141,6 +144,7 @@ func (r *testRunner) executeIteration(ctx context.Context, test Test, m manipula
 				rootManipulator: m,
 				platformInfo:    r.info,
 				data:            data,
+				Config:          r.config,
 			})
 
 			ti.duration = time.Since(start)
