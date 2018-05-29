@@ -31,9 +31,9 @@ func CreateTestNamespace(ctx context.Context, t TestInfo) (string, func() error,
 // CreateNamespaces creates the desired namespace line.
 func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespace string, nss string) (c Cleanup, err error) {
 
+	var firstns *gaia.Namespace
 	mctx := manipulate.NewContext()
 	chain := strings.Split(nss, "/")
-	firstns := &gaia.Namespace{}
 
 	for _, name := range chain {
 
