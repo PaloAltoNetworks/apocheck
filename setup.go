@@ -91,6 +91,31 @@ func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.
 		nil
 }
 
+// CheckEnforcersAreUp checks if the enforcers in the given namespace are up
+func CheckEnforcersAreUp(ctx context.Context, m manipulate.Manipulator, namespace string) bool {
+
+	mctx := manipulate.NewContext()
+	mctx.Namespace = namespace
+
+	enforcers := gaia.EnforcersList{}
+
+	retryCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	err := manipulate.Retry(retryCtx, func() error { return m.RetrieveMany(mctx, &enforcers) }, nil)
+	if err != nil {
+		return false
+	}
+
+	for _, enforcer := range enforcers {
+		if enforcer.OperationalStatus != gaia.EnforcerOperationalStatusConnected {
+			return false
+		}
+	}
+
+	return true
+}
+
 // PublicManipulator returns a manipulator facing plublic API from the given manipulator.
 func PublicManipulator(t TestInfo, m manipulate.Manipulator, namespace string) manipulate.Manipulator {
 
