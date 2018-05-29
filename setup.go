@@ -47,11 +47,9 @@ func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespa
 		}
 
 		mctx.Namespace = rootNamespace
-
 		if err = m.Create(mctx, ns); err != nil {
 			return nil, err
 		}
-
 		rootNamespace = ns.Name
 	}
 
