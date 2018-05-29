@@ -145,7 +145,7 @@ func NewCommand(
 	cmdRunTests.Flags().String("api-public", "https://localhost:4443", "Address of the public api gateway")
 	cmdRunTests.Flags().String("token", "", "Access Token")
 	cmdRunTests.Flags().String("account", "", "Account Name")
-	cmdRunTests.Flags().String("config", "", "Server Configuration")
+	cmdRunTests.Flags().String("config", "", "Test Configuration")
 	cmdRunTests.Flags().StringSliceP("id", "i", nil, "Only run tests with the given identifier")
 	cmdRunTests.Flags().StringSliceP("tag", "t", nil, "Only run tests with the given tags")
 
