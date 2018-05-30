@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/aporeto-inc/tg/tglib"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -70,36 +69,13 @@ func NewCommand(
 			// TODO: add argument check.
 			var certPoolPrivate, publicPoolPrivate *x509.CertPool
 			var cert tls.Certificate
+			var err error
 
 			if viper.GetString("api-public") == "" && viper.GetString("token") == "" {
-				x509Cert, key, err := tglib.ReadCertificatePEM(
-					viper.GetString("cert"),
-					viper.GetString("key"),
-					viper.GetString("key-pass"),
-				)
+				cert, certPoolPrivate, publicPoolPrivate, err = setupCerts()
 				if err != nil {
 					return err
 				}
-
-				var er error
-				cert, er = tglib.ToTLSCertificate(x509Cert, key)
-				if er != nil {
-					return er
-				}
-
-				data, err := ioutil.ReadFile(viper.GetString("cacert-private"))
-				if err != nil {
-					return err
-				}
-				certPoolPrivate = x509.NewCertPool()
-				certPoolPrivate.AppendCertsFromPEM(data)
-
-				data, e := ioutil.ReadFile(viper.GetString("cacert-public"))
-				if e != nil {
-					return e
-				}
-				publicPoolPrivate, _ = x509.SystemCertPool()
-				publicPoolPrivate.AppendCertsFromPEM(data)
 			}
 
 			ctx, cancel := context.WithTimeout(context.Background(), viper.GetDuration("limit"))
@@ -111,7 +87,7 @@ func NewCommand(
 			ids := viper.GetStringSlice("id")
 			variants := viper.GetStringSlice("variant")
 			if len(tags) > 0 {
-				suite = mainTestSuite.testsWithArgs(tags,variants)
+				suite = mainTestSuite.testsWithArgs(tags, variants)
 			}
 			if len(ids) > 0 {
 				suite = mainTestSuite.testsWithIDs(ids...)
@@ -157,4 +133,37 @@ func NewCommand(
 	)
 
 	return rootCmd
+}
+
+func setupCerts() (cert tls.Certificate, certPoolPrivate, publicPoolPrivate *x509.CertPool, err error) {
+
+	x509Cert, key, err := tglib.ReadCertificatePEM(
+		viper.GetString("cert"),
+		viper.GetString("key"),
+		viper.GetString("key-pass"),
+	)
+	if err != nil {
+		return cert, nil, nil, err
+	}
+
+	cert, err = tglib.ToTLSCertificate(x509Cert, key)
+	if err != nil {
+		return cert, nil, nil, err
+	}
+
+	data, err := ioutil.ReadFile(viper.GetString("cacert-private"))
+	if err != nil {
+		return cert, nil, nil, err
+	}
+	certPoolPrivate = x509.NewCertPool()
+	certPoolPrivate.AppendCertsFromPEM(data)
+
+	data, err = ioutil.ReadFile(viper.GetString("cacert-public"))
+	if err != nil {
+		return cert, nil, nil, err
+	}
+	publicPoolPrivate, _ = x509.SystemCertPool()
+	publicPoolPrivate.AppendCertsFromPEM(data)
+
+	return cert, certPoolPrivate, publicPoolPrivate, nil
 }

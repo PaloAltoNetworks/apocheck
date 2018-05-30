@@ -17,7 +17,7 @@ import (
 type Cleanup func() error
 
 // CreateTestNamespace a namespace using the given TestInfo.
-func CreateTestNamespace(ctx context.Context, t TestInfo) (string, func() error, error) {
+func CreateTestNamespace(ctx context.Context, t TestInfo) (string, Cleanup, error) {
 
 	testns := fmt.Sprintf("/%s/%s-%d", t.AccountName(), t.testID, t.iteration)
 
@@ -58,13 +58,13 @@ func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespa
 }
 
 // CreateTestAccount creates an account using the given TestInfo and returns an authenticated manipulator.
-func CreateTestAccount(ctx context.Context, t TestInfo) (manipulate.Manipulator, *gaia.Account, func() error, error) {
+func CreateTestAccount(ctx context.Context, t TestInfo) (manipulate.Manipulator, *gaia.Account, Cleanup, error) {
 
 	return CreateAccount(ctx, t.RootManipulator(), t.Account("Euphrates123#"))
 }
 
 // CreateAccount creates the given account and returns an authenticated manipulator.
-func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.Account) (manipulate.Manipulator, *gaia.Account, func() error, error) {
+func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.Account) (manipulate.Manipulator, *gaia.Account, Cleanup, error) {
 
 	// Keep a reference as create will erase it.
 	password := account.Password

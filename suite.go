@@ -15,6 +15,7 @@ func (s testSuite) testsWithArgs(tags, variants []string) testSuite {
 
 	ts := testSuite{}
 
+	sort.Strings(variants)
 	for _, t := range s {
 		for _, c := range t.Tags {
 			for _, wc := range tags {
