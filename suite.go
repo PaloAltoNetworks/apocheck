@@ -20,10 +20,8 @@ func (s testSuite) testsWithArgs(tags, variants []string) testSuite {
 			for _, wc := range tags {
 				if wc == c {
 					if len(variants) != 0 && t.Variants != nil {
-
 						configuredVariants := t.Variants
 						t.Variants = make(map[string]interface{})
-
 						for _, v := range variants {
 							if value, ok := configuredVariants[v]; ok {
 								t.Variants[v] = value
