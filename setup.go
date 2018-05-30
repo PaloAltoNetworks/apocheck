@@ -31,9 +31,9 @@ func CreateTestNamespace(ctx context.Context, t TestInfo) (string, func() error,
 // CreateNamespaces creates the desired namespace line.
 func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespace string, nss string) (c Cleanup, err error) {
 
+	var firstns *gaia.Namespace
 	mctx := manipulate.NewContext()
 	chain := strings.Split(nss, "/")
-	firstns := &gaia.Namespace{}
 
 	for _, name := range chain {
 
@@ -47,11 +47,9 @@ func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespa
 		}
 
 		mctx.Namespace = rootNamespace
-
 		if err = m.Create(mctx, ns); err != nil {
 			return nil, err
 		}
-
 		rootNamespace = ns.Name
 	}
 
@@ -91,6 +89,31 @@ func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.
 		account,
 		func() error { return m.Delete(nil, account) },
 		nil
+}
+
+// CheckEnforcersAreUp checks if the enforcers in the given namespace are up
+func CheckEnforcersAreUp(ctx context.Context, m manipulate.Manipulator, namespace string) bool {
+
+	mctx := manipulate.NewContext()
+	mctx.Namespace = namespace
+
+	enforcers := gaia.EnforcersList{}
+
+	retryCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	err := manipulate.Retry(retryCtx, func() error { return m.RetrieveMany(mctx, &enforcers) }, nil)
+	if err != nil {
+		return false
+	}
+
+	for _, enforcer := range enforcers {
+		if enforcer.OperationalStatus != gaia.EnforcerOperationalStatusConnected {
+			return false
+		}
+	}
+
+	return true
 }
 
 // PublicManipulator returns a manipulator facing plublic API from the given manipulator.

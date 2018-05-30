@@ -109,7 +109,7 @@ func NewCommand(
 
 			tags := viper.GetStringSlice("tag")
 			ids := viper.GetStringSlice("id")
-			variants:=viper.GetStringSlice("variant")
+			variants := viper.GetStringSlice("variant")
 			if len(tags) > 0 {
 				suite = mainTestSuite.testsWithTags(tags...)
 			}
@@ -119,7 +119,6 @@ func NewCommand(
 			if len(variants) > 0 {
 				suite = mainTestSuite.testsWithVariants(variants...)
 			}
-
 
 			return newTestRunner(
 				suite,
@@ -131,8 +130,6 @@ func NewCommand(
 				viper.GetInt("concurrent"),
 				viper.GetInt("stress"),
 				viper.GetBool("verbose"),
-				viper.GetString("token"),
-				viper.GetString("account"),
 				viper.GetString("config"),
 			).Run(ctx, suite)
 		},
@@ -148,9 +145,7 @@ func NewCommand(
 	cmdRunTests.Flags().String("key", "", "Path to client certificate key")
 	cmdRunTests.Flags().String("api-private", "https://localhost:4444", "Address of the private api gateway")
 	cmdRunTests.Flags().String("api-public", "https://localhost:4443", "Address of the public api gateway")
-	cmdRunTests.Flags().String("token", "", "Access Token")
-	cmdRunTests.Flags().String("account", "", "Account Name")
-	cmdRunTests.Flags().String("config", "", "Server Configuration")
+	cmdRunTests.Flags().String("config", "", "Test Configuration")
 	cmdRunTests.Flags().StringSliceP("id", "i", nil, "Only run tests with the given identifier")
 	cmdRunTests.Flags().StringSliceP("tag", "t", nil, "Only run tests with the given tags")
 	cmdRunTests.Flags().StringSliceP("variant", "v", nil, "Only run tests with the given variant")

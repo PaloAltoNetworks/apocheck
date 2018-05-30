@@ -49,10 +49,7 @@ type testRunner struct {
 	privateTLSConfig *tls.Config
 	publicTLSConfig  *tls.Config
 	verbose          bool
-	token            string
-	account          string
 	config           string
-	caFilePath       string
 }
 
 func newTestRunner(
@@ -65,8 +62,6 @@ func newTestRunner(
 	concurrent int,
 	stress int,
 	verbose bool,
-	token string,
-	account string,
 	config string,
 ) *testRunner {
 
@@ -93,9 +88,7 @@ func newTestRunner(
 			RootCAs:      privateCAPool,
 			Certificates: []tls.Certificate{cert},
 		},
-		token:   token,
-		account: account,
-		config:  config,
+		config: config,
 	}
 }
 
