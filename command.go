@@ -2,6 +2,7 @@ package apocheck
 
 import (
 	"context"
+	"crypto/tls"
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
@@ -66,34 +67,16 @@ func NewCommand(
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			// TODO: add argument check.
+			var certPoolPrivate, publicPoolPrivate *x509.CertPool
+			var cert tls.Certificate
+			var err error
 
-			x509Cert, key, err := tglib.ReadCertificatePEM(
-				viper.GetString("cert"),
-				viper.GetString("key"),
-				viper.GetString("key-pass"),
-			)
-			if err != nil {
-				return err
+			if viper.GetString("api-public") == "" && viper.GetString("token") == "" {
+				cert, certPoolPrivate, publicPoolPrivate, err = setupCerts()
+				if err != nil {
+					return err
+				}
 			}
-
-			cert, err := tglib.ToTLSCertificate(x509Cert, key)
-			if err != nil {
-				return err
-			}
-
-			data, err := ioutil.ReadFile(viper.GetString("cacert-private"))
-			if err != nil {
-				return err
-			}
-			certPoolPrivate := x509.NewCertPool()
-			certPoolPrivate.AppendCertsFromPEM(data)
-
-			data, err = ioutil.ReadFile(viper.GetString("cacert-public"))
-			if err != nil {
-				return err
-			}
-			publicPoolPrivate, _ := x509.SystemCertPool()
-			publicPoolPrivate.AppendCertsFromPEM(data)
 
 			ctx, cancel := context.WithTimeout(context.Background(), viper.GetDuration("limit"))
 			defer cancel()
@@ -120,6 +103,8 @@ func NewCommand(
 				viper.GetInt("concurrent"),
 				viper.GetInt("stress"),
 				viper.GetBool("verbose"),
+				viper.GetString("token"),
+				viper.GetString("account"),
 				viper.GetString("config"),
 			).Run(ctx, suite)
 		},
@@ -135,6 +120,8 @@ func NewCommand(
 	cmdRunTests.Flags().String("key", "", "Path to client certificate key")
 	cmdRunTests.Flags().String("api-private", "https://localhost:4444", "Address of the private api gateway")
 	cmdRunTests.Flags().String("api-public", "https://localhost:4443", "Address of the public api gateway")
+	cmdRunTests.Flags().String("token", "", "Access Token")
+	cmdRunTests.Flags().String("account", "", "Account Name")
 	cmdRunTests.Flags().String("config", "", "Test Configuration")
 	cmdRunTests.Flags().StringSliceP("id", "i", nil, "Only run tests with the given identifier")
 	cmdRunTests.Flags().StringSliceP("tag", "t", nil, "Only run tests with the given tags")
@@ -146,4 +133,37 @@ func NewCommand(
 	)
 
 	return rootCmd
+}
+
+func setupCerts() (cert tls.Certificate, certPoolPrivate, publicPoolPrivate *x509.CertPool, err error) {
+
+	x509Cert, key, err := tglib.ReadCertificatePEM(
+		viper.GetString("cert"),
+		viper.GetString("key"),
+		viper.GetString("key-pass"),
+	)
+	if err != nil {
+		return cert, nil, nil, err
+	}
+
+	cert, err = tglib.ToTLSCertificate(x509Cert, key)
+	if err != nil {
+		return cert, nil, nil, err
+	}
+
+	data, err := ioutil.ReadFile(viper.GetString("cacert-private"))
+	if err != nil {
+		return cert, nil, nil, err
+	}
+	certPoolPrivate = x509.NewCertPool()
+	certPoolPrivate.AppendCertsFromPEM(data)
+
+	data, err = ioutil.ReadFile(viper.GetString("cacert-public"))
+	if err != nil {
+		return cert, nil, nil, err
+	}
+	publicPoolPrivate, _ = x509.SystemCertPool()
+	publicPoolPrivate.AppendCertsFromPEM(data)
+
+	return cert, certPoolPrivate, publicPoolPrivate, nil
 }
