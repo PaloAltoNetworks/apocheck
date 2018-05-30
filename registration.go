@@ -30,10 +30,6 @@ func RegisterTest(t Test) {
 		panic("test is missing tags")
 	}
 
-	if t.Variant == "" {
-		panic("test is missing variant")
-	}
-
 	h := fnv.New32()
 	if _, err := h.Write([]byte(t.Name + t.Description + t.Author + "hey")); err != nil {
 		panic(err)
