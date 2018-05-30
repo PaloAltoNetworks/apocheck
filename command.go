@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/aporeto-inc/tg/tglib"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -103,8 +102,9 @@ func NewCommand(
 
 			tags := viper.GetStringSlice("tag")
 			ids := viper.GetStringSlice("id")
+			variants := viper.GetStringSlice("variant")
 			if len(tags) > 0 {
-				suite = mainTestSuite.testsWithTags(tags...)
+				suite = mainTestSuite.testsWithArgs(tags, variants)
 			}
 			if len(ids) > 0 {
 				suite = mainTestSuite.testsWithIDs(ids...)

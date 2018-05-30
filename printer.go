@@ -14,7 +14,7 @@ import (
 
 var printLock = &sync.Mutex{}
 
-func printSetupError(test Test, recovery interface{}, err error) {
+func printSetupError(curTest testRun, recovery interface{}, err error) {
 
 	printLock.Lock()
 	defer printLock.Unlock()
@@ -23,9 +23,10 @@ func printSetupError(test Test, recovery interface{}, err error) {
 	fmt.Printf("%s\n",
 		goterm.Bold(
 			goterm.Color(
-				fmt.Sprintf("%s FAIL %s",
-					test.id,
-					test.Name,
+				fmt.Sprintf("%s FAIL %s (variant %s)",
+					curTest.test.id,
+					curTest.test.Name,
+					curTest.testInfo.testVariant,
 				),
 				goterm.YELLOW,
 			),
@@ -48,7 +49,7 @@ func printSetupError(test Test, recovery interface{}, err error) {
 	fmt.Println()
 }
 
-func printResults(test Test, results []testResult, showOnSuccess bool) {
+func printResults(currTest testRun, results []testResult, showOnSuccess bool) {
 
 	printLock.Lock()
 	defer printLock.Unlock()
@@ -65,10 +66,11 @@ func printResults(test Test, results []testResult, showOnSuccess bool) {
 	if !failed && !showOnSuccess {
 		fmt.Printf("%s\n",
 			goterm.Color(
-				fmt.Sprintf("%s %s %s %s",
-					test.id,
+				fmt.Sprintf("%s %s %s (variant %s) %s",
+					currTest.test.id,
 					resultString,
-					test.Name,
+					currTest.test.Name,
+					currTest.testInfo.testVariant,
 					goterm.Color(fmt.Sprintf("it: %d, avg: %s", len(results), averageTime(results)), goterm.BLUE),
 				),
 				goterm.GREEN,
@@ -84,9 +86,9 @@ func printResults(test Test, results []testResult, showOnSuccess bool) {
 	}
 
 	fmt.Println()
-	fmt.Println(goterm.Bold(goterm.Color(fmt.Sprintf("%s %s %s", test.id, resultString, test.Name), color)))
+	fmt.Println(goterm.Bold(goterm.Color(fmt.Sprintf("%s %s %s (variant %s)", currTest.test.id, resultString, currTest.test.Name, currTest.testInfo.testVariant), color)))
 	fmt.Println()
-	fmt.Println(wordwrap.WrapString(fmt.Sprintf("%s — %s", test.Description, test.Author), 80))
+	fmt.Println(wordwrap.WrapString(fmt.Sprintf("%s — %s", currTest.test.Description, currTest.test.Author), 80))
 	fmt.Println()
 
 	for _, result := range results {

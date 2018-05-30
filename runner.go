@@ -88,11 +88,11 @@ func newTestRunner(
 			RootCAs:      privateCAPool,
 			Certificates: []tls.Certificate{cert},
 		},
-		config: config,
+		config:  config,
 	}
 }
 
-func (r *testRunner) executeIteration(ctx context.Context, test Test, m manipulate.Manipulator, data interface{}, results chan testResult) {
+func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m manipulate.Manipulator, data interface{}, results chan testResult) {
 
 	sem := make(chan struct{}, r.concurrent)
 
@@ -137,8 +137,10 @@ func (r *testRunner) executeIteration(ctx context.Context, test Test, m manipula
 			}()
 
 			start := time.Now()
-			ti.err = test.Function(ctx, TestInfo{
-				testID:          test.id,
+			ti.err = currTest.test.Function(ctx, TestInfo{
+				testID:          currTest.test.id,
+				testVariant:     currTest.testInfo.testVariant,
+				testVariantData: currTest.testInfo.testVariantData,
 				writter:         buf,
 				iteration:       iteration,
 				rootManipulator: m,
@@ -149,7 +151,7 @@ func (r *testRunner) executeIteration(ctx context.Context, test Test, m manipula
 
 			ti.duration = time.Since(start)
 
-		}(test, i)
+		}(currTest.test, i)
 	}
 }
 
@@ -161,72 +163,80 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 
 	for _, test := range r.suite.sorted() {
 
-		wg.Add(1)
+		for _, variantKey := range test.Variants.sorted() {
 
-		select {
-		case sem <- struct{}{}:
-		case <-ctx.Done():
-			return
-		}
+			wg.Add(1)
 
-		go func(run testRun) {
-
-			defer func() { wg.Done(); <-sem }()
-
-			var data interface{}
-			var td TearDownFunction
-			hasSetup := run.test.Setup != nil
-
-			if hasSetup {
-
-				defer func() {
-					if r := recover(); r != nil {
-						printSetupError(run.test, r, nil)
-					}
-				}()
-
-				var err error
-				data, td, err = run.test.Setup(run.ctx, run.testInfo)
-
-				if err != nil {
-					printSetupError(run.test, nil, err)
-					return
-				}
-
-				if td != nil {
-					defer td()
-				}
+			select {
+			case sem <- struct{}{}:
+			case <-ctx.Done():
+				return
 			}
 
-			resultsCh := make(chan testResult)
+			variantValue := test.Variants[variantKey]
 
-			go r.executeIteration(ctx, run.test, m, data, resultsCh)
+			go func(run testRun) {
 
-			var results []testResult
+				defer func() { wg.Done(); <-sem }()
 
-			for {
-				select {
-				case res := <-resultsCh:
-					results = append(results, res)
+				var data interface{}
+				var td TearDownFunction
+				hasSetup := run.test.Setup != nil
 
-					if len(results) == r.stress {
-						printResults(run.test, results, r.verbose)
+				if hasSetup {
+
+					defer func() {
+						if r := recover(); r != nil {
+							printSetupError(run, r, nil)
+						}
+					}()
+
+					var err error
+					data, td, err = run.test.Setup(run.ctx, run.testInfo)
+
+					if err != nil {
+						printSetupError(run, nil, err)
 						return
 					}
-				case <-ctx.Done():
-					return
-				}
-			}
 
-		}(testRun{
-			ctx:  ctx,
-			test: test,
-			testInfo: TestInfo{
-				testID:          test.id,
-				rootManipulator: m,
-				platformInfo:    r.info,
-			},
-		})
+					if td != nil {
+						defer td()
+					}
+				}
+
+				resultsCh := make(chan testResult)
+
+				go r.executeIteration(ctx, run, m, data, resultsCh)
+
+				var results []testResult
+
+				for {
+					select {
+					case res := <-resultsCh:
+						results = append(results, res)
+
+						if len(results) == r.stress {
+							printResults(run, results, r.verbose)
+							return
+						}
+					case <-ctx.Done():
+						return
+					}
+				}
+
+			}(testRun{
+				ctx:  ctx,
+				test: test,
+				testInfo: TestInfo{
+					testID:          test.id,
+					testVariant:     variantKey,
+					testVariantData: variantValue,
+					rootManipulator: m,
+					platformInfo:    r.info,
+					Config:          r.config,
+				},
+			})
+		}
 	}
 
 	wg.Wait()
