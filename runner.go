@@ -99,7 +99,7 @@ func newTestRunner(
 	}
 }
 
-func (r *testRunner) executeIteration(ctx context.Context, test Test, m manipulate.Manipulator, data interface{}, results chan testResult) {
+func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m manipulate.Manipulator, data interface{}, results chan testResult) {
 
 	sem := make(chan struct{}, r.concurrent)
 
@@ -144,8 +144,9 @@ func (r *testRunner) executeIteration(ctx context.Context, test Test, m manipula
 			}()
 
 			start := time.Now()
-			ti.err = test.Function(ctx, TestInfo{
-				testID:          test.id,
+			ti.err = currTest.test.Function(ctx, TestInfo{
+				testID:          currTest.test.id,
+				variant:         currTest.testInfo.variant,
 				writter:         buf,
 				iteration:       iteration,
 				rootManipulator: m,
@@ -156,7 +157,7 @@ func (r *testRunner) executeIteration(ctx context.Context, test Test, m manipula
 
 			ti.duration = time.Since(start)
 
-		}(test, i)
+		}(currTest.test, i)
 	}
 }
 
@@ -194,7 +195,7 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 
 					defer func() {
 						if r := recover(); r != nil {
-							printSetupError(run.test, run.testInfo, r, nil)
+							printSetupError(run, r, nil)
 						}
 					}()
 
@@ -202,7 +203,7 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 					data, td, err = run.test.Setup(run.ctx, run.testInfo)
 
 					if err != nil {
-						printSetupError(run.test, run.testInfo, nil, err)
+						printSetupError(run, nil, err)
 						return
 					}
 
@@ -213,7 +214,7 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 
 				resultsCh := make(chan testResult)
 
-				go r.executeIteration(ctx, run.test, m, data, resultsCh)
+				go r.executeIteration(ctx, run, m, data, resultsCh)
 
 				var results []testResult
 
@@ -223,7 +224,7 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 						results = append(results, res)
 
 						if len(results) == r.stress {
-							printResults(run.test, run.testInfo, results, r.verbose)
+							printResults(run, results, r.verbose)
 							return
 						}
 					case <-ctx.Done():
