@@ -13,6 +13,7 @@ import (
 	"github.com/aporeto-inc/midgard-lib/client"
 )
 
+// Cleanup function is a type function
 type Cleanup func() error
 
 // CreateTestNamespace a namespace using the given TestInfo.
