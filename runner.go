@@ -22,6 +22,7 @@ type testRun struct {
 	durations []time.Duration
 	errs      []error
 	loggers   []io.ReadWriter
+	variant   string
 	test      Test
 	testInfo  TestInfo
 }
@@ -169,64 +170,73 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 			return
 		}
 
-		go func(run testRun) {
+		variants := map[string]interface{}{"base": nil}
+		if test.Variants != nil {
+			variants = test.Variants
+		}
 
-			defer func() { wg.Done(); <-sem }()
+		for k, v := range variants {
 
-			var data interface{}
-			var td TearDownFunction
-			hasSetup := run.test.Setup != nil
+			go func(run testRun) {
 
-			if hasSetup {
+				defer func() { wg.Done(); <-sem }()
 
-				defer func() {
-					if r := recover(); r != nil {
-						printSetupError(run.test, r, nil)
-					}
-				}()
+				var data interface{}
+				var td TearDownFunction
+				hasSetup := run.test.Setup != nil
 
-				var err error
-				data, td, err = run.test.Setup(run.ctx, run.testInfo)
+				if hasSetup {
 
-				if err != nil {
-					printSetupError(run.test, nil, err)
-					return
-				}
+					defer func() {
+						if r := recover(); r != nil {
+							printSetupError(run.test, r, nil)
+						}
+					}()
 
-				if td != nil {
-					defer td()
-				}
-			}
+					var err error
+					data, td, err = run.test.Setup(run.ctx, run.testInfo)
 
-			resultsCh := make(chan testResult)
-
-			go r.executeIteration(ctx, run.test, m, data, resultsCh)
-
-			var results []testResult
-
-			for {
-				select {
-				case res := <-resultsCh:
-					results = append(results, res)
-
-					if len(results) == r.stress {
-						printResults(run.test, results, r.verbose)
+					if err != nil {
+						printSetupError(run.test, nil, err)
 						return
 					}
-				case <-ctx.Done():
-					return
-				}
-			}
 
-		}(testRun{
-			ctx:  ctx,
-			test: test,
-			testInfo: TestInfo{
-				testID:          test.id,
-				rootManipulator: m,
-				platformInfo:    r.info,
-			},
-		})
+					if td != nil {
+						defer td()
+					}
+				}
+
+				resultsCh := make(chan testResult)
+
+				go r.executeIteration(ctx, run.test, m, data, resultsCh)
+
+				var results []testResult
+
+				for {
+					select {
+					case res := <-resultsCh:
+						results = append(results, res)
+
+						if len(results) == r.stress {
+							printResults(run.test, results, r.verbose)
+							return
+						}
+					case <-ctx.Done():
+						return
+					}
+				}
+
+			}(testRun{
+				ctx:     ctx,
+				variant: k,
+				test:    test,
+				testInfo: TestInfo{
+					testID:          test.id,
+					rootManipulator: m,
+					platformInfo:    r.info,
+				},
+			})
+		}
 	}
 
 	wg.Wait()

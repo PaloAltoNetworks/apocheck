@@ -105,13 +105,10 @@ func NewCommand(
 			ids := viper.GetStringSlice("id")
 			variants := viper.GetStringSlice("variant")
 			if len(tags) > 0 {
-				suite = mainTestSuite.testsWithTags(tags...)
+				suite = mainTestSuite.testsWithArgs(tags, variants)
 			}
 			if len(ids) > 0 {
 				suite = mainTestSuite.testsWithIDs(ids...)
-			}
-			if len(variants) > 0 {
-				suite = mainTestSuite.testsWithVariants(variants...)
 			}
 
 			return newTestRunner(
