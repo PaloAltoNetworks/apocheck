@@ -174,8 +174,7 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 			variants = test.Variants
 		}
 
-		for k, v := range variants {
-
+		for k := range variants {
 			go func(run testRun) {
 
 				defer func() { wg.Done(); <-sem }()
@@ -188,7 +187,7 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 
 					defer func() {
 						if r := recover(); r != nil {
-							printSetupError(run.test, run.variant, r, nil)
+							printSetupError(run.test, run.testInfo, r, nil)
 						}
 					}()
 
@@ -196,7 +195,7 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 					data, td, err = run.test.Setup(run.ctx, run.testInfo)
 
 					if err != nil {
-						printSetupError(run.test, nil, err)
+						printSetupError(run.test, run.testInfo, nil, err)
 						return
 					}
 
@@ -217,7 +216,7 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 						results = append(results, res)
 
 						if len(results) == r.stress {
-							printResults(run.test, results, r.verbose)
+							printResults(run.test, run.testInfo, results, r.verbose)
 							return
 						}
 					case <-ctx.Done():

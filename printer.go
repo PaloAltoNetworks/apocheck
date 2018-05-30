@@ -14,7 +14,7 @@ import (
 
 var printLock = &sync.Mutex{}
 
-func printSetupError(test Test, recovery interface{}, err error) {
+func printSetupError(test Test, testInfo TestInfo, recovery interface{}, err error) {
 
 	printLock.Lock()
 	defer printLock.Unlock()
@@ -23,9 +23,10 @@ func printSetupError(test Test, recovery interface{}, err error) {
 	fmt.Printf("%s\n",
 		goterm.Bold(
 			goterm.Color(
-				fmt.Sprintf("%s FAIL %s",
+				fmt.Sprintf("%s FAIL %s with VARIANT %s",
 					test.id,
 					test.Name,
+					testInfo.variant,
 				),
 				goterm.YELLOW,
 			),
@@ -48,7 +49,7 @@ func printSetupError(test Test, recovery interface{}, err error) {
 	fmt.Println()
 }
 
-func printResults(test Test, results []testResult, showOnSuccess bool) {
+func printResults(test Test, testInfo TestInfo, results []testResult, showOnSuccess bool) {
 
 	printLock.Lock()
 	defer printLock.Unlock()
@@ -65,10 +66,11 @@ func printResults(test Test, results []testResult, showOnSuccess bool) {
 	if !failed && !showOnSuccess {
 		fmt.Printf("%s\n",
 			goterm.Color(
-				fmt.Sprintf("%s %s %s %s",
+				fmt.Sprintf("%s %s %s %s %s",
 					test.id,
 					resultString,
 					test.Name,
+					testInfo.variant,
 					goterm.Color(fmt.Sprintf("it: %d, avg: %s", len(results), averageTime(results)), goterm.BLUE),
 				),
 				goterm.GREEN,
@@ -84,7 +86,7 @@ func printResults(test Test, results []testResult, showOnSuccess bool) {
 	}
 
 	fmt.Println()
-	fmt.Println(goterm.Bold(goterm.Color(fmt.Sprintf("%s %s %s", test.id, resultString, test.Name), color)))
+	fmt.Println(goterm.Bold(goterm.Color(fmt.Sprintf("%s %s %s %s", test.id, resultString, test.Name, testInfo.variant), color)))
 	fmt.Println()
 	fmt.Println(wordwrap.WrapString(fmt.Sprintf("%s — %s", test.Description, test.Author), 80))
 	fmt.Println()
