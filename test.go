@@ -29,13 +29,3 @@ author     : %s
 categories : %s
 `, t.id, t.Name, t.Description, t.Author, strings.Join(t.Tags, ", "))
 }
-
-// GetVariant retrieves current variant of the test
-func (t Test) GetVariant() (string, interface{}) {
-
-	if t.Variants == nil {
-		return "", nil
-	}
-
-	return t.currentVariant, t.Variants[t.currentVariant]
-}

@@ -73,6 +73,9 @@ func (t TestInfo) Iteration() int { return t.iteration }
 // TestID returns the test ID
 func (t TestInfo) TestID() string { return t.testID }
 
+// Variant returns the current variant
+func (t TestInfo) Variant() string { return t.variant }
+
 // RootManipulator returns the root manipulator.
 func (t TestInfo) RootManipulator() manipulate.Manipulator { return t.rootManipulator }
 
