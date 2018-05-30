@@ -49,10 +49,7 @@ type testRunner struct {
 	privateTLSConfig *tls.Config
 	publicTLSConfig  *tls.Config
 	verbose          bool
-	token            string
-	account          string
 	config           string
-	caFilePath       string
 }
 
 func newTestRunner(
@@ -65,8 +62,6 @@ func newTestRunner(
 	concurrent int,
 	stress int,
 	verbose bool,
-	token string,
-	account string,
 	config string,
 ) *testRunner {
 
@@ -93,8 +88,6 @@ func newTestRunner(
 			RootCAs:      privateCAPool,
 			Certificates: []tls.Certificate{cert},
 		},
-		token:   token,
-		account: account,
 		config:  config,
 	}
 }
@@ -254,45 +247,15 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 	subctx, subCancel := context.WithTimeout(ctx, 3*time.Second)
 	defer subCancel()
 
-	var api, username, token, account string
-	var tlsConfig *tls.Config
-
-	if r.publicAPI != "" && r.token != "" {
-
-		tlsConfig = &tls.Config{
-			InsecureSkipVerify: true,
-		}
-
-		pf, err := apiutils.GetPublicCA(subctx, r.publicAPI, tlsConfig)
-		if err != nil {
-			return err
-		}
-
-		r.info.Platform = make(map[string]string)
-		r.info.Platform["ca-public"] = string(pf)
-		r.info.Platform["public-api-external"] = r.publicAPI
-
-		api = r.publicAPI
-		username = "bearer"
-		token = r.token
-		account = fmt.Sprintf("/%s", r.account)
-
-	} else {
-		pf, err := apiutils.GetConfig(subctx, r.privateAPI, r.privateTLSConfig)
-		if err != nil {
-			return err
-		}
-
-		api = r.privateAPI
-		tlsConfig = r.privateTLSConfig
-
-		r.info.Platform = pf
-
+	pf, err := apiutils.GetConfig(subctx, r.privateAPI, r.privateTLSConfig)
+	if err != nil {
+		return err
 	}
 
+	r.info.Platform = pf
 	r.teardowns = make(chan TearDownFunction, len(suite))
 
-	r.execute(ctx, maniphttp.NewHTTPManipulatorWithTLS(api, username, token, account, tlsConfig))
+	r.execute(ctx, maniphttp.NewHTTPManipulatorWithTLS(r.privateAPI, "", "", "", r.privateTLSConfig))
 
 	return nil
 }
