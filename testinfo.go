@@ -13,6 +13,7 @@ import (
 // A TestInfo contains various information about a test.
 type TestInfo struct {
 	testID          string
+	variant         string
 	data            interface{}
 	iteration       int
 	writter         io.Writer

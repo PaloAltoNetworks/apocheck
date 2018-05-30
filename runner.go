@@ -22,7 +22,6 @@ type testRun struct {
 	durations []time.Duration
 	errs      []error
 	loggers   []io.ReadWriter
-	variant   string
 	test      Test
 	testInfo  TestInfo
 }
@@ -189,7 +188,7 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 
 					defer func() {
 						if r := recover(); r != nil {
-							printSetupError(run.test, r, nil)
+							printSetupError(run.test, run.variant, r, nil)
 						}
 					}()
 
@@ -227,11 +226,11 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 				}
 
 			}(testRun{
-				ctx:     ctx,
-				variant: k,
-				test:    test,
+				ctx:  ctx,
+				test: test,
 				testInfo: TestInfo{
 					testID:          test.id,
+					variant:         k,
 					rootManipulator: m,
 					platformInfo:    r.info,
 				},
