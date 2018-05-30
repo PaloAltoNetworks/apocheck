@@ -29,7 +29,10 @@ func init() {
 		Description: "This test uses variants in setup / teardown and test functions.",
 		Author:      "Satyam",
 		Tags:        []string{"variants"},
-		Variants:    apocheck.TestVariants{"no-data-variant": nil, "data-variant": "data-for-variant"},
+		Variants: apocheck.TestVariants{
+			"no-data-variant": nil,
+			"data-variant":    "data-for-variant",
+		},
 		Setup: func(ctx context.Context, t apocheck.TestInfo) (interface{}, apocheck.TearDownFunction, error) {
 
 			variant, data := t.TestVariant()
