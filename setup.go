@@ -42,7 +42,7 @@ func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespa
 		}
 
 		ns := &gaia.Namespace{Name: name}
-		if firstns.Name == "" {
+		if firstns == nil {
 			firstns = ns
 		}
 

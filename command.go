@@ -68,39 +68,34 @@ func NewCommand(
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			// TODO: add argument check.
-			var certPoolPrivate, publicPoolPrivate *x509.CertPool
-			var cert tls.Certificate
 
-			if viper.GetString("api-public") == "" && viper.GetString("token") == "" {
-				x509Cert, key, err := tglib.ReadCertificatePEM(
-					viper.GetString("cert"),
-					viper.GetString("key"),
-					viper.GetString("key-pass"),
-				)
-				if err != nil {
-					return err
-				}
-
-				var er error
-				cert, er = tglib.ToTLSCertificate(x509Cert, key)
-				if er != nil {
-					return er
-				}
-
-				data, err := ioutil.ReadFile(viper.GetString("cacert-private"))
-				if err != nil {
-					return err
-				}
-				certPoolPrivate = x509.NewCertPool()
-				certPoolPrivate.AppendCertsFromPEM(data)
-
-				data, e := ioutil.ReadFile(viper.GetString("cacert-public"))
-				if e != nil {
-					return e
-				}
-				publicPoolPrivate, _ = x509.SystemCertPool()
-				publicPoolPrivate.AppendCertsFromPEM(data)
+			x509Cert, key, err := tglib.ReadCertificatePEM(
+				viper.GetString("cert"),
+				viper.GetString("key"),
+				viper.GetString("key-pass"),
+			)
+			if err != nil {
+				return err
 			}
+
+			cert, err := tglib.ToTLSCertificate(x509Cert, key)
+			if err != nil {
+				return err
+			}
+
+			data, err := ioutil.ReadFile(viper.GetString("cacert-private"))
+			if err != nil {
+				return err
+			}
+			certPoolPrivate := x509.NewCertPool()
+			certPoolPrivate.AppendCertsFromPEM(data)
+
+			data, err = ioutil.ReadFile(viper.GetString("cacert-public"))
+			if err != nil {
+				return err
+			}
+			publicPoolPrivate, _ := x509.SystemCertPool()
+			publicPoolPrivate.AppendCertsFromPEM(data)
 
 			ctx, cancel := context.WithTimeout(context.Background(), viper.GetDuration("limit"))
 			defer cancel()
