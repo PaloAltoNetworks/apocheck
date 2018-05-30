@@ -15,7 +15,7 @@ type Test struct {
 
 	// To allow reusability of test code, we allow variants which can run the same test
 	// multiple times, once for each variant with the information stored in the map.
-	Variants map[string]interface{}
+	Variants testVariants
 
 	Setup    SetupFunction
 	Function TestFunction
@@ -27,5 +27,6 @@ name       : %s
 desc       : %s
 author     : %s
 categories : %s
-`, t.id, t.Name, t.Description, t.Author, strings.Join(t.Tags, ", "))
+variants   : %s
+`, t.id, t.Name, t.Description, t.Author, strings.Join(t.Tags, ", "), strings.Join(t.Variants.sorted(), ", "))
 }

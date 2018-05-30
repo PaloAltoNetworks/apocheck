@@ -146,7 +146,8 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m m
 			start := time.Now()
 			ti.err = currTest.test.Function(ctx, TestInfo{
 				testID:          currTest.test.id,
-				variant:         currTest.testInfo.variant,
+				testVariant:     currTest.testInfo.testVariant,
+				testVariantData: currTest.testInfo.testVariantData,
 				writter:         buf,
 				iteration:       iteration,
 				rootManipulator: m,
@@ -169,20 +170,18 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 
 	for _, test := range r.suite.sorted() {
 
-		wg.Add(1)
+		for _, variantKey := range test.Variants.sorted() {
 
-		select {
-		case sem <- struct{}{}:
-		case <-ctx.Done():
-			return
-		}
+			wg.Add(1)
 
-		variants := map[string]interface{}{"base": nil}
-		if test.Variants != nil {
-			variants = test.Variants
-		}
+			select {
+			case sem <- struct{}{}:
+			case <-ctx.Done():
+				return
+			}
 
-		for k := range variants {
+			variantValue := test.Variants[variantKey]
+
 			go func(run testRun) {
 
 				defer func() { wg.Done(); <-sem }()
@@ -237,7 +236,8 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 				test: test,
 				testInfo: TestInfo{
 					testID:          test.id,
-					variant:         k,
+					testVariant:     variantKey,
+					testVariantData: variantValue,
 					rootManipulator: m,
 					platformInfo:    r.info,
 					Config:          r.config,

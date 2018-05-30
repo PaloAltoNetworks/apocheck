@@ -23,10 +23,10 @@ func printSetupError(curTest testRun, recovery interface{}, err error) {
 	fmt.Printf("%s\n",
 		goterm.Bold(
 			goterm.Color(
-				fmt.Sprintf("%s FAIL %s with VARIANT %s",
+				fmt.Sprintf("%s FAIL %s (variant %s)",
 					curTest.test.id,
 					curTest.test.Name,
-					curTest.testInfo.variant,
+					curTest.testInfo.testVariant,
 				),
 				goterm.YELLOW,
 			),
@@ -66,11 +66,11 @@ func printResults(currTest testRun, results []testResult, showOnSuccess bool) {
 	if !failed && !showOnSuccess {
 		fmt.Printf("%s\n",
 			goterm.Color(
-				fmt.Sprintf("%s %s %s %s %s",
+				fmt.Sprintf("%s %s %s (variant %s) %s",
 					currTest.test.id,
 					resultString,
 					currTest.test.Name,
-					currTest.testInfo.variant,
+					currTest.testInfo.testVariant,
 					goterm.Color(fmt.Sprintf("it: %d, avg: %s", len(results), averageTime(results)), goterm.BLUE),
 				),
 				goterm.GREEN,
@@ -86,7 +86,7 @@ func printResults(currTest testRun, results []testResult, showOnSuccess bool) {
 	}
 
 	fmt.Println()
-	fmt.Println(goterm.Bold(goterm.Color(fmt.Sprintf("%s %s %s %s", currTest.test.id, resultString, currTest.test.Name, currTest.testInfo.variant), color)))
+	fmt.Println(goterm.Bold(goterm.Color(fmt.Sprintf("%s %s %s (variant %s)", currTest.test.id, resultString, currTest.test.Name, currTest.testInfo.testVariant), color)))
 	fmt.Println()
 	fmt.Println(wordwrap.WrapString(fmt.Sprintf("%s — %s", currTest.test.Description, currTest.test.Author), 80))
 	fmt.Println()
