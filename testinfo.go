@@ -83,4 +83,5 @@ func (t TestInfo) RootManipulator() manipulate.Manipulator { return t.rootManipu
 // PlatformInfo returns the platform information.
 func (t TestInfo) PlatformInfo() *bootstrap.Info { return t.platformInfo }
 
+// Write performs a write
 func (t TestInfo) Write(p []byte) (n int, err error) { return t.writter.Write(p) }

@@ -99,7 +99,7 @@ func newTestRunner(
 	}
 }
 
-func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m manipulate.Manipulator, data interface{}, results chan testResult) {
+func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m manipulate.Manipulator, data interface{}, results chan testResult, buf *bytes.Buffer) {
 
 	sem := make(chan struct{}, r.concurrent)
 
@@ -114,8 +114,6 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m m
 		go func(t Test, iteration int) {
 
 			defer func() { <-sem }()
-
-			buf := &bytes.Buffer{}
 
 			ti := testResult{
 				test:      t,
@@ -200,20 +198,15 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 
 					var err error
 					data, td, err = run.test.Setup(run.ctx, run.testInfo)
-
 					if err != nil {
 						printSetupError(run, nil, err)
 						return
-					}
-
-					if td != nil {
-						defer td()
 					}
 				}
 
 				resultsCh := make(chan testResult)
 
-				go r.executeIteration(ctx, run, m, data, resultsCh)
+				go r.executeIteration(ctx, run, m, data, resultsCh, run.testInfo.writter.(*bytes.Buffer))
 
 				var results []testResult
 
@@ -221,12 +214,17 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 					select {
 					case res := <-resultsCh:
 						results = append(results, res)
-
+						if td != nil {
+							td()
+						}
 						if len(results) == r.stress {
 							printResults(run, results, r.verbose)
 							return
 						}
 					case <-ctx.Done():
+						if td != nil {
+							td()
+						}
 						return
 					}
 				}
@@ -238,6 +236,7 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 					testID:          test.id,
 					testVariant:     variantKey,
 					testVariantData: variantValue,
+					writter:         &bytes.Buffer{},
 					rootManipulator: m,
 					platformInfo:    r.info,
 					Config:          r.config,

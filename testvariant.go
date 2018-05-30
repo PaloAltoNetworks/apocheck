@@ -4,13 +4,13 @@ import (
 	"sort"
 )
 
-type testVariants map[string]interface{}
+type TestVariants map[string]interface{}
 
-func defaultTestVariant() testVariants {
-	return testVariants{"base": nil}
+func defaultTestVariant() TestVariants {
+	return TestVariants{"base": nil}
 }
 
-func (v testVariants) sorted() (out []string) {
+func (v TestVariants) sorted() (out []string) {
 
 	for k := range v {
 		out = append(out, k)

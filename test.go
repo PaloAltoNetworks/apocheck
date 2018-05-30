@@ -15,7 +15,7 @@ type Test struct {
 
 	// To allow reusability of test code, we allow variants which can run the same test
 	// multiple times, once for each variant with the information stored in the map.
-	Variants testVariants
+	Variants TestVariants
 
 	Setup    SetupFunction
 	Function TestFunction
