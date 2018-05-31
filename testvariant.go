@@ -4,6 +4,7 @@ import (
 	"sort"
 )
 
+// TestVariants allows a test writer to setup a variant of the test
 type TestVariants map[string]interface{}
 
 func defaultTestVariant() TestVariants {
