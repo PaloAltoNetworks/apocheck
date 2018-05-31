@@ -18,7 +18,7 @@ type TestInfo struct {
 	testVariantData interface{}
 	data            interface{}
 	iteration       int
-	writter         io.Writer
+	writer          io.Writer
 	rootManipulator manipulate.Manipulator
 	platformInfo    *bootstrap.Info
 	Config          string
@@ -86,7 +86,7 @@ func (t TestInfo) RootManipulator() manipulate.Manipulator { return t.rootManipu
 func (t TestInfo) PlatformInfo() *bootstrap.Info { return t.platformInfo }
 
 // Write performs a write
-func (t TestInfo) Write(p []byte) (n int, err error) { return t.writter.Write(p) }
+func (t TestInfo) Write(p []byte) (n int, err error) { return t.writer.Write(p) }
 
 // TimeSinceLastStep provides the time since last step or assertion
 func (t TestInfo) TimeSinceLastStep() string {

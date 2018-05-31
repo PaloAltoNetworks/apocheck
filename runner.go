@@ -147,7 +147,7 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m m
 				testID:          currTest.test.id,
 				testVariant:     currTest.testInfo.testVariant,
 				testVariantData: currTest.testInfo.testVariantData,
-				writter:         buf,
+				writer:          buf,
 				iteration:       iteration,
 				rootManipulator: m,
 				platformInfo:    r.info,
@@ -208,7 +208,7 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 
 				resultsCh := make(chan testResult)
 
-				go r.executeIteration(ctx, run, m, data, resultsCh, run.testInfo.writter.(*bytes.Buffer))
+				go r.executeIteration(ctx, run, m, data, resultsCh, run.testInfo.writer.(*bytes.Buffer))
 
 				var results []testResult
 
@@ -239,7 +239,7 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 					testID:          test.id,
 					testVariant:     variantKey,
 					testVariantData: variantValue,
-					writter:         &bytes.Buffer{},
+					writer:          &bytes.Buffer{},
 					rootManipulator: m,
 					platformInfo:    r.info,
 					Config:          r.config,
