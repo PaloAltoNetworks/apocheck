@@ -3,17 +3,11 @@ package apocheck
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"strings"
 
 	"github.com/buger/goterm"
 	"github.com/smartystreets/goconvey/convey"
 )
-
-type res struct {
-	Actual   interface{}
-	Expected interface{}
-}
 
 type assestionError struct {
 	msg         string
@@ -38,8 +32,6 @@ func (e assestionError) Error() string {
 // Assert can use goconvey function to perform an assertion.
 func Assert(t TestInfo, message string, actual interface{}, f func(interface{}, ...interface{}) string, expected ...interface{}) {
 
-	var w io.Writer
-	w = t
 	if msg := f(actual, expected...); msg != "" {
 
 		r := newAssestionError(message)
@@ -51,8 +43,8 @@ func Assert(t TestInfo, message string, actual interface{}, f func(interface{}, 
 		panic(r)
 	}
 
-	fmt.Fprintf(w, goterm.Color(fmt.Sprintf("- [PASS] %s (%s)", message, t.TimeSinceLastStep()), goterm.GREEN)) // nolint
-	fmt.Fprintln(w)
+	fmt.Fprintf(t, goterm.Color(fmt.Sprintf("- [PASS] %s (%s)", message, t.TimeSinceLastStep()), goterm.GREEN)) // nolint
+	fmt.Fprintln(t)
 }
 
 // Step runs a particular step.

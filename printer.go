@@ -51,8 +51,6 @@ func printSetupError(curTest testRun, recovery interface{}, err error) {
 
 func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (failed bool) {
 
-	var failures int
-
 	failed = hasErrors(results)
 
 	resultString := "FAIL"
@@ -78,7 +76,6 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 
 		color := goterm.GREEN
 		if failed {
-			failures++
 			color = goterm.YELLOW
 		}
 
@@ -99,7 +96,7 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 		)
 	}
 
-	currTest.testInfo.WriteHeader([]byte(output))
+	currTest.testInfo.WriteHeader([]byte(output)) // nolint
 	return
 }
 
@@ -136,7 +133,7 @@ func appendResults(currTest testRun, results []testResult, showOnSuccess bool) {
 		if len(result.stack) > 0 {
 			output = output + fmt.Sprintf("    Test panic:\n\n%s\n", string(result.stack))
 		}
-		currTest.testInfo.Write([]byte(output))
+		currTest.testInfo.Write([]byte(output)) // nolint
 	}
 }
 

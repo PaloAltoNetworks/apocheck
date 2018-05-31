@@ -18,13 +18,10 @@ import (
 )
 
 type testRun struct {
-	ctx       context.Context
-	durations []time.Duration
-	errs      []error
-	loggers   []io.ReadWriter
-	test      Test
-	testInfo  TestInfo
-	verbose   bool
+	ctx      context.Context
+	test     Test
+	testInfo TestInfo
+	verbose  bool
 }
 
 type testResult struct {
@@ -53,7 +50,6 @@ type testRunner struct {
 	token            string
 	account          string
 	config           string
-	caFilePath       string
 }
 
 func newTestRunner(
@@ -240,8 +236,6 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 
 				fmt.Println(hdr.String())
 				fmt.Println(buf.String())
-				return
-
 			}(testRun{
 				ctx:     ctx,
 				test:    test,
@@ -270,10 +264,10 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 	var api, username, token, account string
 	var tlsConfig *tls.Config
 
-	if r.publicAPI != "" && r.token != "" {
+	if r.token != "" {
 
 		tlsConfig = &tls.Config{
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: true, // nolint
 		}
 
 		pf, err := apiutils.GetPublicCA(subctx, r.publicAPI, tlsConfig)
@@ -286,11 +280,12 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 		r.info.Platform["public-api-external"] = r.publicAPI
 
 		api = r.publicAPI
-		username = "bearer"
+		username = "Bearer"
 		token = r.token
 		account = fmt.Sprintf("/%s", r.account)
 
 	} else {
+
 		pf, err := apiutils.GetConfig(subctx, r.privateAPI, r.privateTLSConfig)
 		if err != nil {
 			return err
@@ -300,7 +295,6 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 		tlsConfig = r.privateTLSConfig
 
 		r.info.Platform = pf
-
 	}
 
 	r.teardowns = make(chan TearDownFunction, len(suite))
