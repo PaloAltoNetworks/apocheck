@@ -9,30 +9,16 @@ type testSuite map[string]Test
 
 func (s testSuite) testsWithArgs(tags, variants []string) testSuite {
 
-	if len(tags) == 0 {
-		return s
-	}
-
 	ts := testSuite{}
 
 	sort.Strings(variants)
 	for _, t := range s {
-		for _, c := range t.Tags {
-			for _, wc := range tags {
-				if wc == c {
-					if len(variants) != 0 && t.Variants != nil {
-						configuredVariants := t.Variants
-						t.Variants = make(map[string]interface{})
-						for _, v := range variants {
-							if value, ok := configuredVariants[v]; ok {
-								t.Variants[v] = value
-							}
-						}
-					}
 
-					ts[t.Name] = t
-				}
-			}
+		if t.MatchTags(tags) {
+
+			t.SetupMatchingVariants(variants)
+
+			ts[t.Name] = t
 		}
 	}
 
