@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/aporeto-inc/gaia/v1/golang"
 	"github.com/aporeto-inc/manipulate"
@@ -21,6 +22,7 @@ type TestInfo struct {
 	rootManipulator manipulate.Manipulator
 	platformInfo    *bootstrap.Info
 	Config          string
+	timeOfLastStep  time.Time
 }
 
 // Account returns a gaia Account object that can be used for the test.
@@ -85,3 +87,10 @@ func (t TestInfo) PlatformInfo() *bootstrap.Info { return t.platformInfo }
 
 // Write performs a write
 func (t TestInfo) Write(p []byte) (n int, err error) { return t.writter.Write(p) }
+
+// TimeSinceLastStep provides the time since last step or assertion
+func (t TestInfo) TimeSinceLastStep() string {
+	d := time.Since(t.timeOfLastStep)
+	t.timeOfLastStep = time.Now()
+	return d.Round(time.Millisecond).String()
+}

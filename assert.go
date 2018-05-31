@@ -36,8 +36,10 @@ func (e assestionError) Error() string {
 }
 
 // Assert can use goconvey function to perform an assertion.
-func Assert(w io.Writer, message string, actual interface{}, f func(interface{}, ...interface{}) string, expected ...interface{}) {
+func Assert(t TestInfo, message string, actual interface{}, f func(interface{}, ...interface{}) string, expected ...interface{}) {
 
+	var w io.Writer
+	w = t
 	if msg := f(actual, expected...); msg != "" {
 
 		r := newAssestionError(message)
@@ -49,15 +51,14 @@ func Assert(w io.Writer, message string, actual interface{}, f func(interface{},
 		panic(r)
 	}
 
-	fmt.Fprintf(w, goterm.Color(fmt.Sprintf("- [PASS] %s", message), goterm.GREEN)) // nolint
+	fmt.Fprintf(w, goterm.Color(fmt.Sprintf("- [PASS] %s (%s)", message, t.TimeSinceLastStep()), goterm.GREEN)) // nolint
 	fmt.Fprintln(w)
 }
 
 // Step runs a particular step.
 func Step(t TestInfo, name string, step func() error) {
 
-	fmt.Fprintln(t, name)
-
+	fmt.Fprintf(t, "%s (%s)\n", name, t.TimeSinceLastStep())
 	if err := step(); err != nil {
 		Assert(t, "step should not return any error", err, convey.ShouldBeNil)
 	}

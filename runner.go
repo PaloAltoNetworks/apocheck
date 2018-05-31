@@ -24,6 +24,7 @@ type testRun struct {
 	loggers   []io.ReadWriter
 	test      Test
 	testInfo  TestInfo
+	verbose   bool
 }
 
 type testResult struct {
@@ -152,6 +153,7 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m m
 				platformInfo:    r.info,
 				data:            data,
 				Config:          r.config,
+				timeOfLastStep:  currTest.testInfo.timeOfLastStep,
 			})
 
 			ti.duration = time.Since(start)
@@ -230,8 +232,9 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 				}
 
 			}(testRun{
-				ctx:  ctx,
-				test: test,
+				ctx:     ctx,
+				test:    test,
+				verbose: r.verbose,
 				testInfo: TestInfo{
 					testID:          test.id,
 					testVariant:     variantKey,
@@ -240,6 +243,7 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 					rootManipulator: m,
 					platformInfo:    r.info,
 					Config:          r.config,
+					timeOfLastStep:  time.Now(),
 				},
 			})
 		}
