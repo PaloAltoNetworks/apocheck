@@ -18,6 +18,7 @@ type TestInfo struct {
 	testVariantData interface{}
 	data            interface{}
 	iteration       int
+	header          io.Writer
 	writer          io.Writer
 	rootManipulator manipulate.Manipulator
 	platformInfo    *bootstrap.Info
@@ -84,6 +85,9 @@ func (t TestInfo) RootManipulator() manipulate.Manipulator { return t.rootManipu
 
 // PlatformInfo returns the platform information.
 func (t TestInfo) PlatformInfo() *bootstrap.Info { return t.platformInfo }
+
+// WriteHeader performs a write at the header
+func (t TestInfo) WriteHeader(p []byte) (n int, err error) { return t.header.Write(p) }
 
 // Write performs a write
 func (t TestInfo) Write(p []byte) (n int, err error) { return t.writer.Write(p) }

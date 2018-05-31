@@ -49,24 +49,23 @@ func printSetupError(curTest testRun, recovery interface{}, err error) {
 	fmt.Println()
 }
 
-func printResults(currTest testRun, results []testResult, showOnSuccess bool) {
-
-	printLock.Lock()
-	defer printLock.Unlock()
+func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (failed bool) {
 
 	var failures int
 
-	failed := hasErrors(results)
+	failed = hasErrors(results)
 
 	resultString := "FAIL"
 	if !failed {
 		resultString = "PASS"
 	}
 
+	output := ""
+
 	if !failed && !showOnSuccess {
-		fmt.Printf("%s\n",
+		output = fmt.Sprintf("%s\n",
 			goterm.Color(
-				fmt.Sprintf("%s %s %s (variant %s) %s",
+				fmt.Sprintf("ID: %s : %s : %s (variant %s) %s",
 					currTest.test.id,
 					resultString,
 					currTest.test.Name,
@@ -74,23 +73,44 @@ func printResults(currTest testRun, results []testResult, showOnSuccess bool) {
 					goterm.Color(fmt.Sprintf("it: %d, avg: %s", len(results), averageTime(results)), goterm.BLUE),
 				),
 				goterm.GREEN,
+			))
+	} else {
+
+		color := goterm.GREEN
+		if failed {
+			failures++
+			color = goterm.YELLOW
+		}
+
+		output = fmt.Sprintf("\n%s\n%s\n",
+			goterm.Bold(
+				goterm.Color(
+					fmt.Sprintf("ID: %s : %s :  %s (variant %s)",
+						currTest.test.id,
+						resultString,
+						currTest.test.Name,
+						currTest.testInfo.testVariant,
+					),
+					color),
+			),
+			wordwrap.WrapString(fmt.Sprintf("  %s — %s", currTest.test.Description, currTest.test.Author),
+				120,
 			),
 		)
-		return
 	}
 
-	color := goterm.GREEN
-	if failed {
-		failures++
-		color = goterm.YELLOW
-	}
+	currTest.testInfo.WriteHeader([]byte(output))
+	return
+}
 
-	fmt.Println()
-	fmt.Println(goterm.Bold(goterm.Color(fmt.Sprintf("%s %s %s (variant %s)", currTest.test.id, resultString, currTest.test.Name, currTest.testInfo.testVariant), color)))
-	fmt.Println()
-	fmt.Println(wordwrap.WrapString(fmt.Sprintf("%s — %s", currTest.test.Description, currTest.test.Author), 80))
-	fmt.Println()
+func appendResults(currTest testRun, results []testResult, showOnSuccess bool) {
 
+	printLock.Lock()
+	defer printLock.Unlock()
+
+	failed := createHeader(currTest, results, showOnSuccess)
+
+	output := ""
 	for _, result := range results {
 
 		if result.err == nil && !showOnSuccess {
@@ -102,26 +122,21 @@ func printResults(currTest testRun, results []testResult, showOnSuccess bool) {
 			panic(err)
 		}
 
-		fmt.Println(goterm.Color(fmt.Sprintf("iteration %d log after %s\n", result.iteration+1, result.duration), goterm.MAGENTA))
+		output = output + "\n" + goterm.Color(fmt.Sprintf("Iteration [%d] log after %s", result.iteration+1, result.duration), goterm.MAGENTA) + "\n"
 		if len(data) > 0 {
-			fmt.Printf("\n  %s\n", strings.Replace(string(data), "\n", "\n  ", -1))
+			output = output + fmt.Sprintf("  %s\n", strings.Replace(string(data), "\n", "\n  ", -1))
 		} else {
-			fmt.Println()
-			fmt.Println("  <no log>")
-			fmt.Println()
+			output = output + fmt.Sprintf("  <no log>\n")
 		}
 
 		if failed {
-			fmt.Println(goterm.Color(fmt.Sprintf("  error: %s", result.err), goterm.RED))
+			output = output + fmt.Sprintf("%s\n", goterm.Color(fmt.Sprintf("  error: %s", result.err), goterm.RED))
 		}
 
 		if len(result.stack) > 0 {
-			fmt.Println()
-			fmt.Println("  Test panic:")
-			fmt.Println()
-			fmt.Println(string(result.stack))
+			output = output + fmt.Sprintf("    Test panic:\n\n%s\n", string(result.stack))
 		}
-		fmt.Println()
+		currTest.testInfo.Write([]byte(output))
 	}
 }
 

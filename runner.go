@@ -100,7 +100,7 @@ func newTestRunner(
 	}
 }
 
-func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m manipulate.Manipulator, data interface{}, results chan testResult, buf *bytes.Buffer) {
+func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m manipulate.Manipulator, data interface{}, results chan testResult) {
 
 	sem := make(chan struct{}, r.concurrent)
 
@@ -113,6 +113,8 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m m
 		}
 
 		go func(t Test, iteration int) {
+
+			buf := &bytes.Buffer{}
 
 			defer func() { <-sem }()
 
@@ -184,6 +186,12 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 
 			go func(run testRun) {
 
+				buf := &bytes.Buffer{}
+				hdr := &bytes.Buffer{}
+
+				run.testInfo.writer = buf
+				run.testInfo.header = hdr
+
 				defer func() { wg.Done(); <-sem }()
 
 				var data interface{}
@@ -208,28 +216,31 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 
 				resultsCh := make(chan testResult)
 
-				go r.executeIteration(ctx, run, m, data, resultsCh, run.testInfo.writer.(*bytes.Buffer))
+				go r.executeIteration(ctx, run, m, data, resultsCh)
 
 				var results []testResult
 
-				for {
+				for b := true; b; {
 					select {
 					case res := <-resultsCh:
 						results = append(results, res)
-						if td != nil {
-							td()
-						}
 						if len(results) == r.stress {
-							printResults(run, results, r.verbose)
-							return
+							appendResults(run, results, r.verbose)
+							b = false
 						}
 					case <-ctx.Done():
-						if td != nil {
-							td()
-						}
-						return
+						b = false
+						break
 					}
 				}
+
+				if td != nil {
+					td()
+				}
+
+				fmt.Println(hdr.String())
+				fmt.Println(buf.String())
+				return
 
 			}(testRun{
 				ctx:     ctx,
@@ -239,7 +250,6 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 					testID:          test.id,
 					testVariant:     variantKey,
 					testVariantData: variantValue,
-					writer:          &bytes.Buffer{},
 					rootManipulator: m,
 					platformInfo:    r.info,
 					Config:          r.config,
