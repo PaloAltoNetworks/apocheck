@@ -293,5 +293,9 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 
 	r.execute(ctx, maniphttp.NewHTTPManipulatorWithTLS(api, username, token, account, tlsConfig))
 
+	if ctx.Err() != nil {
+		return fmt.Errorf("Deadline exceeded. Try giving a higher time limit using -limit option (%s)", ctx.Err().Error())
+	}
+
 	return nil
 }
