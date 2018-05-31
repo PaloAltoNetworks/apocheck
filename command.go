@@ -120,7 +120,7 @@ func NewCommand(
 	cmdRunTests.Flags().String("key-pass", "", "Password for the certificate key")
 	cmdRunTests.Flags().String("key", "", "Path to client certificate key")
 	cmdRunTests.Flags().String("api-private", "https://localhost:4444", "Address of the private api gateway")
-	cmdRunTests.Flags().String("api-public", "https://localhost:4443", "Address of the public api gateway")
+	cmdRunTests.Flags().String("api-public", "", "Address of the public api gateway")
 	cmdRunTests.Flags().String("token", "", "Access Token")
 	cmdRunTests.Flags().String("account", "", "Account Name")
 	cmdRunTests.Flags().String("config", "", "Test Configuration")
