@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/buger/goterm"
 	"github.com/smartystreets/goconvey/convey"
@@ -43,15 +44,17 @@ func Assert(t TestInfo, message string, actual interface{}, f func(interface{}, 
 		panic(r)
 	}
 
-	fmt.Fprintf(t, goterm.Color(fmt.Sprintf("- [PASS] %s (%s)", message, t.TimeSinceLastStep()), goterm.GREEN)) // nolint
+	fmt.Fprintf(t, goterm.Color(fmt.Sprintf("- [PASS] %s", message), goterm.GREEN)) // nolint
 	fmt.Fprintln(t)
 }
 
 // Step runs a particular step.
 func Step(t TestInfo, name string, step func() error) {
 
-	fmt.Fprintf(t, "%s (%s)\n", name, t.TimeSinceLastStep())
+	start := time.Now()
+	fmt.Fprintf(t, "%s\n", name)
 	if err := step(); err != nil {
 		Assert(t, "step should not return any error", err, convey.ShouldBeNil)
 	}
+	fmt.Fprintf(t, "(%s)\n", time.Since(start).Round(time.Millisecond).String())
 }

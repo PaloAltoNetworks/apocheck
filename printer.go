@@ -82,7 +82,7 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 		output = fmt.Sprintf("\n%s\n%s\n",
 			goterm.Bold(
 				goterm.Color(
-					fmt.Sprintf("ID: %s : %s :  %s (variant %s)",
+					fmt.Sprintf("ID: %s : %s : %s (variant %s)",
 						currTest.test.id,
 						resultString,
 						currTest.test.Name,
