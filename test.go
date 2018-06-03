@@ -83,14 +83,14 @@ func (t Test) matchAnyTags(tags []string) bool {
 }
 
 // SetupMatchingVariants reduces the variants to be run to ones passed in command line
-func (t Test) SetupMatchingVariants(variants []string) {
+func (t Test) SetupMatchingVariants(variants []string) bool {
 
 	if len(variants) == 0 {
-		return
+		return true
 	}
 
 	if t.Variants == nil {
-		return
+		return false
 	}
 
 	configuredVariants := t.Variants
@@ -100,6 +100,8 @@ func (t Test) SetupMatchingVariants(variants []string) {
 			t.Variants[v] = value
 		}
 	}
+
+	return len(t.Variants) != 0
 }
 
 func (t Test) String() string {

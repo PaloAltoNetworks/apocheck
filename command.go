@@ -84,14 +84,14 @@ func NewCommand(
 
 			suite := mainTestSuite
 
+			variants := viper.GetStringSlice("variant")
 			ids := viper.GetStringSlice("id")
 			if len(ids) > 0 {
-				suite = mainTestSuite.testsWithIDs(ids...)
+				suite = mainTestSuite.testsWithIDs(viper.GetBool("verbose"), ids, variants)
 			} else {
 				tags := viper.GetStringSlice("tag")
-				variants := viper.GetStringSlice("variant")
 				if len(tags) > 0 || len(variants) > 0 {
-					suite = mainTestSuite.testsWithArgs(tags, variants)
+					suite = mainTestSuite.testsWithArgs(viper.GetBool("verbose"), tags, variants)
 				}
 			}
 
@@ -105,6 +105,7 @@ func NewCommand(
 				viper.GetInt("concurrent"),
 				viper.GetInt("stress"),
 				viper.GetBool("verbose"),
+				viper.GetBool("skip-teardown"),
 				viper.GetString("token"),
 				viper.GetString("account"),
 				viper.GetString("config"),
@@ -128,6 +129,7 @@ func NewCommand(
 	cmdRunTests.Flags().StringSliceP("id", "i", nil, "Only run tests with the given identifier")
 	cmdRunTests.Flags().StringSliceP("tag", "t", nil, "Only run tests with the given tags")
 	cmdRunTests.Flags().StringSliceP("variant", "v", nil, "Only run tests with the given variants")
+	cmdRunTests.Flags().BoolP("skip-teardown", "S", false, "Skip teardown step")
 
 	rootCmd.AddCommand(
 		versionCmd,

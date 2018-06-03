@@ -47,6 +47,7 @@ type testRunner struct {
 	privateTLSConfig *tls.Config
 	publicTLSConfig  *tls.Config
 	verbose          bool
+	skipTeardown     bool
 	token            string
 	account          string
 	config           string
@@ -62,21 +63,23 @@ func newTestRunner(
 	concurrent int,
 	stress int,
 	verbose bool,
+	skipTeardown bool,
 	token string,
 	account string,
 	config string,
 ) *testRunner {
 
 	return &testRunner{
-		privateAPI:  privateAPI,
-		publicAPI:   publicAPI,
-		concurrent:  concurrent,
-		resultsChan: make(chan testRun, concurrent*stress),
-		setupErrs:   make(chan error),
-		status:      map[string]testRun{},
-		stress:      stress,
-		suite:       suite,
-		verbose:     verbose,
+		privateAPI:   privateAPI,
+		publicAPI:    publicAPI,
+		concurrent:   concurrent,
+		resultsChan:  make(chan testRun, concurrent*stress),
+		setupErrs:    make(chan error),
+		status:       map[string]testRun{},
+		stress:       stress,
+		suite:        suite,
+		verbose:      verbose,
+		skipTeardown: skipTeardown,
 		info: &bootstrap.Info{
 			BootstrapCert:    cert,
 			RootCAPool:       publicCAPool,
@@ -230,8 +233,12 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 					}
 				}
 
-				if td != nil {
-					td()
+				if r.skipTeardown {
+					run.testInfo.Write([]byte("Teardown skipped."))
+				} else {
+					if td != nil {
+						td()
+					}
 				}
 
 				fmt.Println(hdr.String())
