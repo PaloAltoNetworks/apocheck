@@ -58,10 +58,8 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 		resultString = "PASS"
 	}
 
-	output := ""
-
 	if !failed && !showOnSuccess {
-		output = fmt.Sprintf("%s\n",
+		output := fmt.Sprintf("%s\n",
 			goterm.Color(
 				fmt.Sprintf("ID: %s : %s : %s (variant %s) %s",
 					currTest.test.id,
@@ -72,30 +70,30 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 				),
 				goterm.GREEN,
 			))
-	} else {
-
-		color := goterm.GREEN
-		if failed {
-			color = goterm.YELLOW
-		}
-
-		output = fmt.Sprintf("\n%s\n%s\n",
-			goterm.Bold(
-				goterm.Color(
-					fmt.Sprintf("ID: %s : %s : %s (variant %s)",
-						currTest.test.id,
-						resultString,
-						currTest.test.Name,
-						currTest.testInfo.testVariant,
-					),
-					color),
-			),
-			wordwrap.WrapString(fmt.Sprintf("  %s — %s", currTest.test.Description, currTest.test.Author),
-				120,
-			),
-		)
+		currTest.testInfo.WriteHeader([]byte(output)) // nolint
+		return
 	}
 
+	color := goterm.GREEN
+	if failed {
+		color = goterm.YELLOW
+	}
+
+	output := fmt.Sprintf("\n%s\n%s\n",
+		goterm.Bold(
+			goterm.Color(
+				fmt.Sprintf("ID: %s : %s : %s (variant %s)",
+					currTest.test.id,
+					resultString,
+					currTest.test.Name,
+					currTest.testInfo.testVariant,
+				),
+				color),
+		),
+		wordwrap.WrapString(fmt.Sprintf("  %s — %s", currTest.test.Description, currTest.test.Author),
+			120,
+		),
+	)
 	currTest.testInfo.WriteHeader([]byte(output)) // nolint
 	return
 }

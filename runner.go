@@ -229,12 +229,11 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 						}
 					case <-ctx.Done():
 						b = false
-						break
 					}
 				}
 
 				if r.skipTeardown {
-					run.testInfo.Write([]byte("Teardown skipped."))
+					run.testInfo.Write([]byte("Teardown skipped.")) //nolint
 				} else {
 					if td != nil {
 						td()

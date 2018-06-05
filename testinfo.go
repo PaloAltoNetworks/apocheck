@@ -95,6 +95,5 @@ func (t TestInfo) Write(p []byte) (n int, err error) { return t.writer.Write(p) 
 // TimeSinceLastStep provides the time since last step or assertion
 func (t TestInfo) TimeSinceLastStep() string {
 	d := time.Since(t.timeOfLastStep)
-	t.timeOfLastStep = time.Now()
 	return d.Round(time.Millisecond).String()
 }
