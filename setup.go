@@ -109,6 +109,7 @@ func CheckEnforcersAreUp(ctx context.Context, m manipulate.Manipulator, namespac
 	}
 
 	for _, enforcer := range enforcers {
+		fmt.Println("Enforcer" + enforcer.OperationalStatus)
 		if enforcer.OperationalStatus != gaia.EnforcerOperationalStatusConnected {
 			return false
 		}
