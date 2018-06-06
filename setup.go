@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aporeto-inc/elemental"
 	"github.com/aporeto-inc/gaia/v1/golang"
 	"github.com/aporeto-inc/manipulate"
 	"github.com/aporeto-inc/manipulate/maniphttp"
@@ -134,4 +135,48 @@ func PublicManipulatorWithTLSConfig(t TestInfo, m manipulate.Manipulator, namesp
 	username, token := maniphttp.ExtractCredentials(m)
 
 	return maniphttp.NewHTTPManipulatorWithTLS(t.PublicAPI(), username, token, namespace, tlsConfig)
+}
+
+// WaitForPushEvent is waiting for a specific event notification.
+// Important: highwind and vince needs to set apiPath parameter to `/highwind/events` and `/vince/events`
+// For other events, set apiPath to ""
+func WaitForPushEvent(ctx context.Context, m manipulate.Manipulator, apiPath string, recursive bool, isWaitingFor func(*elemental.Event) bool) error {
+
+	var subscriber manipulate.Subscriber
+
+	if apiPath == "" {
+		subscriber = maniphttp.NewSubscriber(m, recursive)
+	} else {
+		subscriber = maniphttp.NewSubscriberWithEndpoint(m, apiPath, recursive)
+	}
+
+	innerCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	subscriber.Start(innerCtx, nil)
+
+	for {
+		select {
+		case err := <-subscriber.Errors():
+			return err
+
+		case evt := <-subscriber.Events():
+			if isWaitingFor(evt) {
+				return nil
+			}
+
+		case st := <-subscriber.Status():
+			switch st {
+			case manipulate.SubscriberStatusInitialConnectionFailure:
+				return fmt.Errorf("waiting for push canceled: subscriber status connect failed")
+			case manipulate.SubscriberStatusDisconnection:
+				return fmt.Errorf("waiting for push canceled: subscriber status disconnected")
+			case manipulate.SubscriberStatusFinalDisconnection:
+				return fmt.Errorf("waiting for push canceled: subscriber status terminated")
+			}
+
+		case <-ctx.Done():
+			return fmt.Errorf("waiting for push canceled: %s", ctx.Err())
+		}
+	}
 }
