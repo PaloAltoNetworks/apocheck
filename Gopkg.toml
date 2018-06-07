@@ -24,31 +24,6 @@
 #   go-tests = true
 #   unused-packages = true
 
-
-[[constraint]]
-  name = "github.com/aporeto-inc/addedeffect"
-  version = "8.x"
-
-[[constraint]]
-  name = "github.com/aporeto-inc/gaia"
-  version = "10.x"
-
-[[constraint]]
-  name = "github.com/aporeto-inc/manipulate"
-  version = "10.x"
-
-[[constraint]]
-  name = "github.com/aporeto-inc/midgard-lib"
-  version = "7.x"
-
-[[constraint]]
-  name = "github.com/aporeto-inc/tg"
-  version = "2.x"
-
-[[constraint]]
-  name = "github.com/aporeto-inc/underwater"
-  version = "11.x"
-
 [[constraint]]
   branch = "master"
   name = "github.com/buger/goterm"
