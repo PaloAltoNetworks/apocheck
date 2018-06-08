@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aporeto-inc/addedeffect/apiutils"
-	"github.com/aporeto-inc/manipulate"
-	"github.com/aporeto-inc/manipulate/maniphttp"
-	"github.com/aporeto-inc/underwater/bootstrap"
+	"go.aporeto.io/addedeffect/apiutils"
+	"go.aporeto.io/manipulate"
+	"go.aporeto.io/manipulate/maniphttp"
+	"go.aporeto.io/underwater/bootstrap"
 )
 
 type testRun struct {

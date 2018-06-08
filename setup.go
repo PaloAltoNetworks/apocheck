@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aporeto-inc/elemental"
-	"github.com/aporeto-inc/gaia/v1/golang"
-	"github.com/aporeto-inc/manipulate"
-	"github.com/aporeto-inc/manipulate/maniphttp"
-	"github.com/aporeto-inc/midgard-lib/client"
+	"go.aporeto.io/elemental"
+	"go.aporeto.io/gaia/v1/golang"
+	"go.aporeto.io/manipulate"
+	"go.aporeto.io/manipulate/maniphttp"
+	"go.aporeto.io/midgard-lib/client"
 )
 
 // Cleanup function is a type function

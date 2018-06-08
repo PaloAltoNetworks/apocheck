@@ -6,9 +6,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/aporeto-inc/gaia/v1/golang"
-	"github.com/aporeto-inc/manipulate"
-	"github.com/aporeto-inc/underwater/bootstrap"
+	"go.aporeto.io/gaia/v1/golang"
+	"go.aporeto.io/manipulate"
+	"go.aporeto.io/underwater/bootstrap"
 )
 
 // A TestInfo contains various information about a test.

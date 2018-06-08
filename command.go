@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aporeto-inc/tg/tglib"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.aporeto.io/tg/tglib"
 )
 
 // NewCommand generates a new CLI for regolith
