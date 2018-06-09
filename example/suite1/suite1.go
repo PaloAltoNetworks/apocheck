@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aporeto-inc/apocheck"
+	"go.aporeto.io/apocheck"
 )
 
 func init() {

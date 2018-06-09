@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/aporeto-inc/apocheck"
+	"go.aporeto.io/apocheck"
 
 	// Import all the test suites
-	_ "github.com/aporeto-inc/apocheck/example/suite1"
-	_ "github.com/aporeto-inc/apocheck/example/suite2"
+	_ "go.aporeto.io/apocheck/example/suite1"
+	_ "go.aporeto.io/apocheck/example/suite2"
 )
 
 func main() {

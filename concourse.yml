@@ -7,7 +7,7 @@ image_resource:
 
 inputs:
 - name: src
-  path: go/src/github.com/aporeto-inc/apocheck
+  path: go/src/go.aporeto.io/apocheck
 
 run:
   path: bash
@@ -17,6 +17,6 @@ run:
       export PATH=$PATH:$GOPATH/bin:$PWD/go/bin
       export GOPATH=$PWD/go:$GOPATH
 
-      cd go/src/github.com/aporeto-inc/apocheck
+      cd go/src/go.aporeto.io/apocheck
       dep ensure -v
       ./.test.sh

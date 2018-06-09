@@ -7,7 +7,7 @@ import (
 
 	"github.com/smartystreets/goconvey/convey"
 
-	"github.com/aporeto-inc/apocheck"
+	"go.aporeto.io/apocheck"
 )
 
 func init() {
