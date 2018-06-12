@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"go.aporeto.io/gaia/v1/golang"
+	"go.aporeto.io/api"
 	"go.aporeto.io/manipulate"
 	"go.aporeto.io/underwater/platform"
 )
@@ -27,13 +27,13 @@ type TestInfo struct {
 }
 
 // Account returns a gaia Account object that can be used for the test.
-func (t TestInfo) Account(password string) *gaia.Account {
+func (t TestInfo) Account(password string) *api.Account {
 
-	return &gaia.Account{
+	return &api.Account{
 		Name:     t.AccountName(),
 		Password: password,
 		Email:    fmt.Sprintf("user@%s.com", t.AccountName()),
-		LDAPConnSecurityProtocol: gaia.AccountLDAPConnSecurityProtocolTLS,
+		LDAPConnSecurityProtocol: api.AccountLDAPConnSecurityProtocolTLS,
 	}
 }
 

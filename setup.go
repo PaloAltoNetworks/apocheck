@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"go.aporeto.io/api"
 	"go.aporeto.io/elemental"
-	"go.aporeto.io/gaia/v1/golang"
 	"go.aporeto.io/manipulate"
 	"go.aporeto.io/manipulate/maniphttp"
 	"go.aporeto.io/midgard-lib/client"
@@ -33,7 +33,7 @@ func CreateTestNamespace(ctx context.Context, t TestInfo) (string, Cleanup, erro
 // CreateNamespaces creates the desired namespace line.
 func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespace string, nss string) (c Cleanup, err error) {
 
-	var firstns *gaia.Namespace
+	var firstns *api.Namespace
 	mctx := manipulate.NewContext()
 	chain := strings.Split(nss, "/")
 
@@ -43,7 +43,7 @@ func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespa
 			continue
 		}
 
-		ns := &gaia.Namespace{Name: name}
+		ns := &api.Namespace{Name: name}
 		if firstns == nil {
 			firstns = ns
 		}
@@ -59,13 +59,13 @@ func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespa
 }
 
 // CreateTestAccount creates an account using the given TestInfo and returns an authenticated manipulator.
-func CreateTestAccount(ctx context.Context, t TestInfo) (manipulate.Manipulator, *gaia.Account, Cleanup, error) {
+func CreateTestAccount(ctx context.Context, t TestInfo) (manipulate.Manipulator, *api.Account, Cleanup, error) {
 
 	return CreateAccount(ctx, t.RootManipulator(), t.Account("Euphrates123#"))
 }
 
 // CreateAccount creates the given account and returns an authenticated manipulator.
-func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.Account) (manipulate.Manipulator, *gaia.Account, Cleanup, error) {
+func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *api.Account) (manipulate.Manipulator, *api.Account, Cleanup, error) {
 
 	// Keep a reference as create will erase it.
 	password := account.Password
@@ -99,7 +99,7 @@ func CheckEnforcersAreUp(ctx context.Context, m manipulate.Manipulator, namespac
 	mctx := manipulate.NewContext()
 	mctx.Namespace = namespace
 
-	enforcers := gaia.EnforcersList{}
+	enforcers := api.EnforcersList{}
 
 	retryCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -111,7 +111,7 @@ func CheckEnforcersAreUp(ctx context.Context, m manipulate.Manipulator, namespac
 
 	for _, enforcer := range enforcers {
 		fmt.Println("Enforcer" + enforcer.OperationalStatus)
-		if enforcer.OperationalStatus != gaia.EnforcerOperationalStatusConnected {
+		if enforcer.OperationalStatus != api.EnforcerOperationalStatusConnected {
 			return false
 		}
 	}
