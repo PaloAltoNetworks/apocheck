@@ -74,10 +74,10 @@ func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *api.A
 		return nil, nil, nil, err
 	}
 
-	api := maniphttp.ExtractEndpoint(m)
+	endpoint := maniphttp.ExtractEndpoint(m)
 	tlsConfig := maniphttp.ExtractTLSConfig(m)
 
-	c := midgardclient.NewClientWithTLS(api, tlsConfig)
+	c := midgardclient.NewClientWithTLS(endpoint, tlsConfig)
 
 	subctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -87,7 +87,7 @@ func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *api.A
 		return nil, nil, nil, err
 	}
 
-	return maniphttp.NewHTTPManipulatorWithTLS(api, "Bearer", token, "/"+account.Name, tlsConfig),
+	return maniphttp.NewHTTPManipulatorWithTLS(endpoint, "Bearer", token, "/"+account.Name, tlsConfig),
 		account,
 		func() error { return m.Delete(nil, account) },
 		nil
