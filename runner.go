@@ -14,7 +14,7 @@ import (
 	"go.aporeto.io/addedeffect/apiutils"
 	"go.aporeto.io/manipulate"
 	"go.aporeto.io/manipulate/maniphttp"
-	"go.aporeto.io/underwater/bootstrap"
+	"go.aporeto.io/underwater/platform"
 )
 
 type testRun struct {
@@ -37,7 +37,7 @@ type testRunner struct {
 	privateAPI       string
 	publicAPI        string
 	concurrent       int
-	info             *bootstrap.Info
+	info             *platform.Info
 	resultsChan      chan testRun
 	setupErrs        chan error
 	status           map[string]testRun
@@ -80,7 +80,7 @@ func newTestRunner(
 		suite:        suite,
 		verbose:      verbose,
 		skipTeardown: skipTeardown,
-		info: &bootstrap.Info{
+		info: &platform.Info{
 			BootstrapCert:    cert,
 			RootCAPool:       publicCAPool,
 			SystemCAPool:     privateCAPool,

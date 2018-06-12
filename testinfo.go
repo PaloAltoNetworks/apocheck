@@ -8,7 +8,7 @@ import (
 
 	"go.aporeto.io/gaia/v1/golang"
 	"go.aporeto.io/manipulate"
-	"go.aporeto.io/underwater/bootstrap"
+	"go.aporeto.io/underwater/platform"
 )
 
 // A TestInfo contains various information about a test.
@@ -21,7 +21,7 @@ type TestInfo struct {
 	header          io.Writer
 	writer          io.Writer
 	rootManipulator manipulate.Manipulator
-	platformInfo    *bootstrap.Info
+	platformInfo    *platform.Info
 	Config          string
 	timeOfLastStep  time.Time
 }
@@ -84,7 +84,7 @@ func (t TestInfo) TestVariant() (string, interface{}) { return t.testVariant, t.
 func (t TestInfo) RootManipulator() manipulate.Manipulator { return t.rootManipulator }
 
 // PlatformInfo returns the platform information.
-func (t TestInfo) PlatformInfo() *bootstrap.Info { return t.platformInfo }
+func (t TestInfo) PlatformInfo() *platform.Info { return t.platformInfo }
 
 // WriteHeader performs a write at the header
 func (t TestInfo) WriteHeader(p []byte) (n int, err error) { return t.header.Write(p) }
