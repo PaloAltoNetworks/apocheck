@@ -93,30 +93,35 @@ func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.
 		nil
 }
 
-// CheckEnforcersAreUp checks if the enforcers in the given namespace are up
-func CheckEnforcersAreUp(ctx context.Context, m manipulate.Manipulator, namespace string) bool {
+// CheckIfGivenEnforcerIsUp checks if the given enforcer in the given namespace is up
+func CheckIfGivenEnforcerIsUp(ctx context.Context, m manipulate.Manipulator, namespace, enforcerName string) error {
 
 	mctx := manipulate.NewContext()
+	mctx.Filter = manipulate.NewFilterComposer().WithKey("name").
+		Equals(enforcerName).
+		Done()
 	mctx.Namespace = namespace
 
 	enforcers := gaia.EnforcersList{}
 
-	retryCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	err := manipulate.Retry(retryCtx, func() error { return m.RetrieveMany(mctx, &enforcers) }, nil)
+	err := m.RetrieveMany(mctx, &enforcers)
 	if err != nil {
-		return false
+		return err
 	}
 
-	for _, enforcer := range enforcers {
-		fmt.Println("Enforcer" + enforcer.OperationalStatus)
-		if enforcer.OperationalStatus != gaia.EnforcerOperationalStatusConnected {
-			return false
-		}
+	if len(enforcers) == 0 {
+		return fmt.Errorf("no enforcers found")
 	}
 
-	return true
+	if len(enforcers) > 1 {
+		panic("found more than one enforcer with same name")
+	}
+
+	if enforcers[0].OperationalStatus != gaia.EnforcerOperationalStatusConnected {
+		return fmt.Errorf("enforcer status: %s", enforcers[0].OperationalStatus)
+	}
+
+	return nil
 }
 
 // PublicManipulator returns a manipulator facing plublic API from the given manipulator.
