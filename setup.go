@@ -34,7 +34,6 @@ func CreateTestNamespace(ctx context.Context, t TestInfo) (string, Cleanup, erro
 func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespace string, nss string) (c Cleanup, err error) {
 
 	var firstns *gaia.Namespace
-	mctx := manipulate.NewContext()
 	chain := strings.Split(nss, "/")
 
 	for _, name := range chain {
@@ -48,7 +47,11 @@ func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespa
 			firstns = ns
 		}
 
-		mctx.Namespace = rootNamespace
+		mctx := manipulate.NewContext(
+			ctx,
+			manipulate.ContextOptionNamespace(rootNamespace),
+		)
+
 		if err = m.Create(mctx, ns); err != nil {
 			return nil, err
 		}
@@ -96,11 +99,16 @@ func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.
 // CheckIfGivenEnforcerIsUp checks if the given enforcer in the given namespace is up
 func CheckIfGivenEnforcerIsUp(ctx context.Context, m manipulate.Manipulator, namespace, enforcerName string) error {
 
-	mctx := manipulate.NewContext()
-	mctx.Filter = manipulate.NewFilterComposer().WithKey("name").
-		Equals(enforcerName).
-		Done()
-	mctx.Namespace = namespace
+	mctx := manipulate.NewContext(
+		ctx,
+		manipulate.ContextOptionNamespace(namespace),
+		manipulate.ContextOptionFilter(
+			manipulate.
+				NewFilterComposer().WithKey("name").
+				Equals(enforcerName).
+				Done(),
+		),
+	)
 
 	enforcers := gaia.EnforcersList{}
 
