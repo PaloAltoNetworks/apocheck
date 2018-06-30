@@ -23,8 +23,9 @@ func (s testSuite) testsWithArgs(verbose bool, tags, variants []string) testSuit
 			continue
 		}
 
-		if !t.SetupMatchingVariants(variants) {
-			continue
+		matchingVariants := t.SetupMatchingVariants(variants)
+		if matchingVariants != nil {
+			t.Variants = matchingVariants
 		}
 
 		if verbose {
@@ -60,8 +61,9 @@ func (s testSuite) testsWithIDs(verbose bool, ids, variants []string) testSuite 
 					fmt.Println(" - " + t.Name)
 				}
 
-				if !t.SetupMatchingVariants(variants) {
-					continue
+				matchingVariants := t.SetupMatchingVariants(variants)
+				if matchingVariants != nil {
+					t.Variants = matchingVariants
 				}
 
 				if verbose {
