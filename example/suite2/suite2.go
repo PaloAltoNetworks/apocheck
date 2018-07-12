@@ -23,9 +23,9 @@ func init() {
 				return nil
 			}
 
-			fmt.Fprintln(t, "create a namespace")
-			fmt.Fprintln(t, "add a policy")
-			fmt.Fprintln(t, "send traffic")
+			fmt.Fprintln(t, "create a namespace") // nolint
+			fmt.Fprintln(t, "add a policy")       // nolint
+			fmt.Fprintln(t, "send traffic")       // nolint
 
 			return fmt.Errorf("Unable to send traffic")
 		},
@@ -39,7 +39,7 @@ func init() {
 		Function: func(ctx context.Context, t apocheck.TestInfo) error {
 
 			// <-time.After(3 * time.Second)
-			fmt.Fprintln(t, "trying stuff")
+			fmt.Fprintln(t, "trying stuff") // nolint
 
 			apocheck.Assert(t, "unable to reach eventual consistency", "panic", convey.ShouldEqual, "ok")
 

@@ -45,16 +45,16 @@ func Assert(t TestInfo, message string, actual interface{}, f func(interface{}, 
 	}
 
 	fmt.Fprintf(t, goterm.Color(fmt.Sprintf("- [PASS] %s", message), goterm.GREEN)) // nolint
-	fmt.Fprintln(t)
+	fmt.Fprintln(t)                                                                 // nolint
 }
 
 // Step runs a particular step.
 func Step(t TestInfo, name string, step func() error) {
 
 	start := time.Now()
-	fmt.Fprintf(t, "%s\n", name)
+	fmt.Fprintf(t, "%s\n", name) // nolint
 	if err := step(); err != nil {
 		Assert(t, "step should not return any error", err, convey.ShouldBeNil)
 	}
-	fmt.Fprintf(t, "(%s)\n", time.Since(start).Round(time.Millisecond).String())
+	fmt.Fprintf(t, "(%s)\n", time.Since(start).Round(time.Millisecond).String()) // nolint
 }
