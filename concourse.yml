@@ -18,5 +18,4 @@ run:
       export GOPATH=$PWD/go:$GOPATH
 
       cd go/src/go.aporeto.io/apocheck
-      dep ensure -v
-      ./.test.sh
+      make ci
