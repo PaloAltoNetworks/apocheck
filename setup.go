@@ -35,16 +35,11 @@ func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespa
 
 	var firstns *gaia.Namespace
 	chain := strings.Split(nss, "/")
-	var mctx manipulate.Context
+	var mctx, firstNSmctx manipulate.Context
 	for _, name := range chain {
 
 		if name == "" {
 			continue
-		}
-
-		ns := &gaia.Namespace{Name: name}
-		if firstns == nil {
-			firstns = ns
 		}
 
 		mctx = manipulate.NewContext(
@@ -52,13 +47,19 @@ func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespa
 			manipulate.ContextOptionNamespace(rootNamespace),
 		)
 
+		ns := &gaia.Namespace{Name: name}
+		if firstns == nil {
+			firstns = ns
+			firstNSmctx = mctx
+		}
+
 		if err = m.Create(mctx, ns); err != nil {
 			return nil, err
 		}
 		rootNamespace = ns.Name
 	}
 
-	return func() error { return m.Delete(mctx, firstns) }, nil
+	return func() error { return m.Delete(firstNSmctx, firstns) }, nil
 }
 
 // CreateTestAccount creates an account using the given TestInfo and returns an authenticated manipulator.
