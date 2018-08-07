@@ -10,6 +10,8 @@ It can be used to create a test cli in a second and let you focus on writing sim
 
 Run help command `./example test --help` to see default values.
 
+# screenshot 
+
 ![demo](example/demo.gif)
 
 
