@@ -267,10 +267,10 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 	subctx, subCancel := context.WithTimeout(ctx, 3*time.Second)
 	defer subCancel()
 
-	var api, username, token, account string
+	var api, username, token, namespace string
 	var tlsConfig *tls.Config
 
-	if r.token != "" {
+	if r.privateAPI == "" || r.token != "" {
 
 		tlsConfig = &tls.Config{
 			InsecureSkipVerify: true, // nolint
@@ -286,9 +286,14 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 		r.info.Platform["public-api-external"] = r.publicAPI
 
 		api = r.publicAPI
-		username = "Bearer"
-		token = r.token
-		account = fmt.Sprintf("/%s", r.account)
+		namespace = fmt.Sprintf("/%s", r.account)
+		if r.token != "" {
+			username = "Bearer"
+			token = r.token
+		} else {
+			tlsConfig.RootCAs = r.info.RootCAPool
+			tlsConfig.Certificates = []tls.Certificate{r.info.SystemClientCert}
+		}
 
 	} else {
 
@@ -305,7 +310,7 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 
 	r.teardowns = make(chan TearDownFunction, len(suite))
 
-	r.execute(ctx, maniphttp.NewHTTPManipulatorWithTLS(api, username, token, account, tlsConfig))
+	r.execute(ctx, maniphttp.NewHTTPManipulatorWithTLS(api, username, token, namespace, tlsConfig))
 
 	if ctx.Err() != nil {
 		return fmt.Errorf("Deadline exceeded. Try giving a higher time limit using -limit option (%s)", ctx.Err().Error())
