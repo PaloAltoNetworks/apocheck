@@ -14,7 +14,7 @@ import (
 	"go.aporeto.io/midgard-lib/client"
 )
 
-// Cleanup function is a type function
+// Cleanup function is a type function.
 type Cleanup func() error
 
 // CreateTestNamespace a namespace using the given TestInfo.
@@ -64,7 +64,6 @@ func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespa
 
 // CreateTestAccount creates an account using the given TestInfo and returns an authenticated manipulator.
 func CreateTestAccount(ctx context.Context, t TestInfo) (manipulate.Manipulator, *gaia.Account, Cleanup, error) {
-
 	return CreateAccount(ctx, t.RootManipulator(), t.Account("Euphrates123#"))
 }
 
@@ -74,9 +73,22 @@ func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.
 	// Keep a reference as create will erase it.
 	password := account.Password
 
-	if err := m.Create(nil, account); err != nil {
+	a, _, err := CreateUnauthenticatedAccount(ctx, m, account)
+	if err != nil {
 		return nil, nil, nil, err
 	}
+	m, err = AuthenticateAccount(ctx, m, a, password)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return m,
+		a,
+		func() error { return m.Delete(nil, a) },
+		nil
+}
+
+// AuthenticateAccount authenticates an account by issuing a token from midgard.
+func AuthenticateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.Account, password string) (manipulate.Manipulator, error) {
 
 	endpoint := maniphttp.ExtractEndpoint(m)
 	tlsConfig := maniphttp.ExtractTLSConfig(m)
@@ -84,20 +96,37 @@ func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.
 	c := midgardclient.NewClientWithTLS(endpoint, tlsConfig)
 
 	subctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+
 	defer cancel()
 
 	token, err := c.IssueFromVince(subctx, account.Name, password, "", 5*time.Minute)
+
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
+	}
+	return maniphttp.NewHTTPManipulatorWithTLS(endpoint, "Bearer", token, "/"+account.Name, tlsConfig),
+		nil
+}
+
+// CreateUnauthenticatedTestAccount creates an account with invited status using the given TestInfo and returns an authenticated manipulator.
+func CreateUnauthenticatedTestAccount(ctx context.Context, t TestInfo) (manipulate.Manipulator, *gaia.Account, Cleanup, error) {
+	a, deleteaccount, err := CreateUnauthenticatedAccount(ctx, t.RootManipulator(), t.Account("Euphrates123#"))
+	return t.RootManipulator(), a, deleteaccount, err
+}
+
+// CreateUnauthenticatedAccount creates the given account and returns an authenticated manipulator.
+func CreateUnauthenticatedAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.Account) (*gaia.Account, Cleanup, error) {
+
+	if err := m.Create(nil, account); err != nil {
+		return nil, nil, err
 	}
 
-	return maniphttp.NewHTTPManipulatorWithTLS(endpoint, "Bearer", token, "/"+account.Name, tlsConfig),
-		account,
+	return account,
 		func() error { return m.Delete(nil, account) },
 		nil
 }
 
-// CheckIfGivenEnforcerIsUp checks if the given enforcer in the given namespace is up
+// CheckIfGivenEnforcerIsUp checks if the given enforcer in the given namespace is up.
 func CheckIfGivenEnforcerIsUp(ctx context.Context, m manipulate.Manipulator, namespace, enforcerName string) error {
 
 	mctx := manipulate.NewContext(
