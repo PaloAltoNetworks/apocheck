@@ -18,6 +18,7 @@ type TestInfo struct {
 	testVariantData interface{}
 	data            interface{}
 	iteration       int
+	timeout         time.Duration
 	header          io.Writer
 	writer          io.Writer
 	rootManipulator manipulate.Manipulator

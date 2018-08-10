@@ -44,6 +44,7 @@ type testRunner struct {
 	stress           int
 	suite            testSuite
 	teardowns        chan TearDownFunction
+	timeout          time.Duration
 	privateTLSConfig *tls.Config
 	publicTLSConfig  *tls.Config
 	verbose          bool
@@ -60,6 +61,7 @@ func newTestRunner(
 	publicAPI string,
 	publicCAPool *x509.CertPool,
 	cert tls.Certificate,
+	timeout time.Duration,
 	concurrent int,
 	stress int,
 	verbose bool,
@@ -78,6 +80,7 @@ func newTestRunner(
 		status:       map[string]testRun{},
 		stress:       stress,
 		suite:        suite,
+		timeout:      timeout,
 		verbose:      verbose,
 		skipTeardown: skipTeardown,
 		info: &platform.Info{
@@ -150,6 +153,7 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m m
 				testVariantData: currTest.testInfo.testVariantData,
 				writer:          buf,
 				iteration:       iteration,
+				timeout:         r.timeout,
 				rootManipulator: m,
 				platformInfo:    r.info,
 				data:            data,
@@ -250,6 +254,7 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 					testID:          test.id,
 					testVariant:     variantKey,
 					testVariantData: variantValue,
+					timeout:         r.timeout,
 					rootManipulator: m,
 					platformInfo:    r.info,
 					Config:          r.config,
@@ -313,7 +318,7 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 	r.execute(ctx, maniphttp.NewHTTPManipulatorWithTLS(api, username, token, namespace, tlsConfig))
 
 	if ctx.Err() != nil {
-		return fmt.Errorf("Deadline exceeded. Try giving a higher time limit using -limit option (%s)", ctx.Err().Error())
+		return fmt.Errorf("Deadline exceeded. Try giving a higher time limit using --limit option (%s)", ctx.Err().Error())
 	}
 
 	return nil

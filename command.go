@@ -102,6 +102,7 @@ func NewCommand(
 				viper.GetString("api-public"),
 				certPoolPublic,
 				cert,
+				viper.GetDuration("limit"),
 				viper.GetInt("concurrent"),
 				viper.GetInt("stress"),
 				viper.GetBool("verbose"),

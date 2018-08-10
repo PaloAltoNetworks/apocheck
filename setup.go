@@ -64,11 +64,14 @@ func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespa
 
 // CreateTestAccount creates an account using the given TestInfo and returns an authenticated manipulator.
 func CreateTestAccount(ctx context.Context, t TestInfo) (manipulate.Manipulator, *gaia.Account, Cleanup, error) {
-	return CreateAccount(ctx, t.RootManipulator(), t.Account("Euphrates123#"))
+	account := t.Account("Euphrates123#")
+	account.AccessEnabled = true
+
+	return CreateAccount(ctx, t.RootManipulator(), account, t.timeout)
 }
 
 // CreateAccount creates the given account and returns an authenticated manipulator.
-func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.Account) (manipulate.Manipulator, *gaia.Account, Cleanup, error) {
+func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.Account, timeout time.Duration) (manipulate.Manipulator, *gaia.Account, Cleanup, error) {
 
 	// Keep a reference as create will erase it.
 	password := account.Password
@@ -77,10 +80,12 @@ func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	m, err = AuthenticateAccount(ctx, m, a, password)
+
+	m, err = AuthenticateAccount(ctx, m, a, password, timeout)
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
 	return m,
 		a,
 		func() error { return m.Delete(nil, a) },
@@ -88,7 +93,7 @@ func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.
 }
 
 // AuthenticateAccount authenticates an account by issuing a token from midgard.
-func AuthenticateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.Account, password string) (manipulate.Manipulator, error) {
+func AuthenticateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.Account, password string, timeout time.Duration) (manipulate.Manipulator, error) {
 
 	endpoint := maniphttp.ExtractEndpoint(m)
 	tlsConfig := maniphttp.ExtractTLSConfig(m)
@@ -99,11 +104,11 @@ func AuthenticateAccount(ctx context.Context, m manipulate.Manipulator, account 
 
 	defer cancel()
 
-	token, err := c.IssueFromVince(subctx, account.Name, password, "", 5*time.Minute)
-
+	token, err := c.IssueFromVince(subctx, account.Name, password, "", timeout)
 	if err != nil {
 		return nil, err
 	}
+
 	return maniphttp.NewHTTPManipulatorWithTLS(endpoint, "Bearer", token, "/"+account.Name, tlsConfig),
 		nil
 }
