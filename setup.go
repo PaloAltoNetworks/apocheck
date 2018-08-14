@@ -67,7 +67,7 @@ func CreateTestAccount(ctx context.Context, t TestInfo) (manipulate.Manipulator,
 	account := t.Account("Euphrates123#")
 	account.AccessEnabled = true
 
-	return CreateAccount(ctx, t.RootManipulator(), account, t.timeout)
+	return CreateAccount(ctx, t.RootManipulator(), account, t.Timeout())
 }
 
 // CreateAccount creates the given account and returns an authenticated manipulator.
@@ -93,7 +93,7 @@ func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.
 }
 
 // AuthenticateAccount authenticates an account by issuing a token from midgard.
-func AuthenticateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.Account, password string, timeout time.Duration) (manipulate.Manipulator, error) {
+func AuthenticateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.Account, password string, tokenValidity time.Duration) (manipulate.Manipulator, error) {
 
 	endpoint := maniphttp.ExtractEndpoint(m)
 	tlsConfig := maniphttp.ExtractTLSConfig(m)
@@ -104,7 +104,7 @@ func AuthenticateAccount(ctx context.Context, m manipulate.Manipulator, account 
 
 	defer cancel()
 
-	token, err := c.IssueFromVince(subctx, account.Name, password, "", timeout)
+	token, err := c.IssueFromVince(subctx, account.Name, password, "", tokenValidity)
 	if err != nil {
 		return nil, err
 	}

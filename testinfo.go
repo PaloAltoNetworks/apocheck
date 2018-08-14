@@ -98,3 +98,6 @@ func (t TestInfo) TimeSinceLastStep() string {
 	d := time.Since(t.timeOfLastStep)
 	return d.Round(time.Millisecond).String()
 }
+
+// Timeout provides the duration before the test timeout.
+func (t TestInfo) Timeout() time.Duration { return t.timeout }
