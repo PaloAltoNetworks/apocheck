@@ -102,8 +102,7 @@ func newTestRunner(
 	}
 }
 
-func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m manipulate.Manipulator, data interface{}, results chan testResult) {
-
+func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m manipulate.Manipulator, results chan testResult) {
 	sem := make(chan struct{}, r.concurrent)
 
 	for i := 0; i < r.stress; i++ {
@@ -114,14 +113,17 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m m
 			return
 		}
 
-		go func(t Test, iteration int) {
+		go func(t testRun, iteration int) {
+			var data interface{}
+			var td TearDownFunction
+			var err error
 
 			buf := &bytes.Buffer{}
 
 			defer func() { <-sem }()
 
 			ti := testResult{
-				test:      t,
+				test:      t.test,
 				reader:    buf,
 				iteration: iteration,
 			}
@@ -146,11 +148,30 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m m
 				ti.stack = debug.Stack()
 			}()
 
+			t.test.id = NewUUID()
+			t.testInfo.testID = t.test.id
+
+			if t.test.Setup != nil {
+				data, td, err = t.test.Setup(t.ctx, t.testInfo)
+				if err != nil {
+					printSetupError(t, nil, err)
+					return
+				}
+
+				defer func() {
+					if r.skipTeardown {
+						t.testInfo.Write([]byte("Teardown skipped.")) //nolint
+					} else if td != nil {
+						td()
+					}
+				}()
+			}
+
 			start := time.Now()
-			ti.err = currTest.test.Function(ctx, TestInfo{
-				testID:          currTest.test.id,
-				testVariant:     currTest.testInfo.testVariant,
-				testVariantData: currTest.testInfo.testVariantData,
+			ti.err = t.test.Function(ctx, TestInfo{
+				testID:          t.test.id,
+				testVariant:     t.testInfo.testVariant,
+				testVariantData: t.testInfo.testVariantData,
 				writer:          buf,
 				iteration:       iteration,
 				timeout:         r.timeout,
@@ -158,12 +179,12 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m m
 				platformInfo:    r.info,
 				data:            data,
 				Config:          r.config,
-				timeOfLastStep:  currTest.testInfo.timeOfLastStep,
+				timeOfLastStep:  t.testInfo.timeOfLastStep,
 			})
 
 			ti.duration = time.Since(start)
 
-		}(currTest.test, i)
+		}(currTest, i)
 	}
 }
 
@@ -197,29 +218,9 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 
 				defer func() { wg.Done(); <-sem }()
 
-				var data interface{}
-				var td TearDownFunction
-				hasSetup := run.test.Setup != nil
-
-				if hasSetup {
-
-					defer func() {
-						if r := recover(); r != nil {
-							printSetupError(run, r, nil)
-						}
-					}()
-
-					var err error
-					data, td, err = run.test.Setup(run.ctx, run.testInfo)
-					if err != nil {
-						printSetupError(run, nil, err)
-						return
-					}
-				}
-
 				resultsCh := make(chan testResult)
 
-				go r.executeIteration(ctx, run, m, data, resultsCh)
+				go r.executeIteration(ctx, run, m, resultsCh)
 
 				var results []testResult
 
@@ -236,14 +237,6 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 					}
 				}
 
-				if r.skipTeardown {
-					run.testInfo.Write([]byte("Teardown skipped.")) //nolint
-				} else {
-					if td != nil {
-						td()
-					}
-				}
-
 				fmt.Println(hdr.String())
 				fmt.Println(buf.String())
 			}(testRun{
@@ -251,7 +244,6 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 				test:    test,
 				verbose: r.verbose,
 				testInfo: TestInfo{
-					testID:          test.id,
 					testVariant:     variantKey,
 					testVariantData: variantValue,
 					timeout:         r.timeout,

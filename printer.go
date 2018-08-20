@@ -105,8 +105,8 @@ func appendResults(currTest testRun, results []testResult, showOnSuccess bool) {
 
 	failed := createHeader(currTest, results, showOnSuccess)
 
-	output := ""
 	for _, result := range results {
+		output := ""
 
 		if result.err == nil && !showOnSuccess {
 			continue
@@ -117,19 +117,19 @@ func appendResults(currTest testRun, results []testResult, showOnSuccess bool) {
 			panic(err)
 		}
 
-		output = output + "\n" + goterm.Color(fmt.Sprintf("Iteration [%d] log after %s", result.iteration+1, result.duration), goterm.MAGENTA) + "\n"
+		output += goterm.Color(fmt.Sprintf("\nIteration [%d] log after %s", result.iteration+1, result.duration), goterm.MAGENTA) + "\n"
 		if len(data) > 0 {
-			output = output + fmt.Sprintf("  %s\n", strings.Replace(string(data), "\n", "\n  ", -1))
+			output += fmt.Sprintf("  %s\n", strings.Replace(string(data), "\n", "\n  ", -1))
 		} else {
-			output = output + fmt.Sprintf("  <no log>\n")
+			output += fmt.Sprintf("  <no log>\n")
 		}
 
 		if failed {
-			output = output + fmt.Sprintf("%s\n", goterm.Color(fmt.Sprintf("  error: %s", result.err), goterm.RED))
+			output += fmt.Sprintf("%s\n", goterm.Color(fmt.Sprintf("  error: %s", result.err), goterm.RED))
 		}
 
 		if len(result.stack) > 0 {
-			output = output + fmt.Sprintf("    Test panic:\n\n%s\n", string(result.stack))
+			output += fmt.Sprintf("    Test panic:\n\n%s\n", string(result.stack))
 		}
 		currTest.testInfo.Write([]byte(output)) // nolint
 	}

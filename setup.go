@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	uuid "github.com/satori/go.uuid"
 	"go.aporeto.io/elemental"
 	"go.aporeto.io/gaia"
 	"go.aporeto.io/manipulate"
@@ -227,4 +228,9 @@ func WaitForPushEvent(ctx context.Context, m manipulate.Manipulator, apiPath str
 			return fmt.Errorf("waiting for push canceled: %s", ctx.Err())
 		}
 	}
+}
+
+// NewUUID returns a new UUID in string form
+func NewUUID() string {
+	return uuid.Must(uuid.NewV4(), nil).String()
 }
