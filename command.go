@@ -91,7 +91,7 @@ func NewCommand(
 			} else {
 				tags := viper.GetStringSlice("tag")
 				if len(tags) > 0 || len(variants) > 0 {
-					suite = mainTestSuite.testsWithArgs(viper.GetBool("verbose"), tags, variants)
+					suite = mainTestSuite.testsWithArgs(viper.GetBool("verbose"), viper.GetBool("match-all"), tags, variants)
 				}
 			}
 
@@ -129,6 +129,7 @@ func NewCommand(
 	cmdRunTests.Flags().String("config", "", "Test Configuration")
 	cmdRunTests.Flags().StringSliceP("id", "i", nil, "Only run tests with the given identifier")
 	cmdRunTests.Flags().StringSliceP("tag", "t", nil, "Only run tests with the given tags")
+	cmdRunTests.Flags().BoolP("match-all", "M", false, "Match all tags specified")
 	cmdRunTests.Flags().StringSliceP("variant", "v", nil, "Only run tests with the given variants")
 	cmdRunTests.Flags().BoolP("skip-teardown", "S", false, "Skip teardown step")
 

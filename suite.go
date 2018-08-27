@@ -8,7 +8,7 @@ import (
 
 type testSuite map[string]Test
 
-func (s testSuite) testsWithArgs(verbose bool, tags, variants []string) testSuite {
+func (s testSuite) testsWithArgs(verbose, matchAll bool, tags, variants []string) testSuite {
 
 	ts := testSuite{}
 
@@ -19,7 +19,7 @@ func (s testSuite) testsWithArgs(verbose bool, tags, variants []string) testSuit
 
 	for _, t := range s {
 
-		if !t.MatchTags(tags) {
+		if !t.MatchTags(tags, matchAll) {
 			continue
 		}
 

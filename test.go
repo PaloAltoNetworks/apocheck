@@ -21,27 +21,22 @@ type Test struct {
 	Function TestFunction
 }
 
-// MatchTags matches all tags if it finds a tag @all otherwise matches any tag
-func (t Test) MatchTags(tags []string) bool {
+// MatchTags matches all tags if --match-all is set otherwise matches any tag
+func (t Test) MatchTags(tags []string, matchAll bool) bool {
 
-	any := true
 	m := make([]string, 0)
 	for _, incoming := range tags {
-		if incoming == "@all" {
-			any = false
-			continue
-		}
 		m = append(m, incoming)
 	}
 
-	if any {
+	if !matchAll {
 		return t.matchAnyTags(m)
 	}
 
 	return t.matchAllTags(m)
 }
 
-// matchAllTags returns true if all incoming tags are matching
+// matchAllTags returns true if all incoming tags are matching minus exclusions
 func (t Test) matchAllTags(tags []string) bool {
 
 	if len(tags) == 0 {
@@ -49,14 +44,15 @@ func (t Test) matchAllTags(tags []string) bool {
 	}
 
 	for _, incoming := range tags {
-		matched := false
-		for _, testTag := range t.Tags {
-			if incoming == testTag {
-				matched = true
-				break
+		if strings.HasPrefix(incoming, "~") {
+			if t.hasTag(t.Tags, strings.TrimPrefix(incoming, "~")) {
+				return false
 			}
+
+			continue
 		}
-		if !matched {
+
+		if !t.hasTag(t.Tags, incoming) {
 			return false
 		}
 	}
@@ -72,10 +68,19 @@ func (t Test) matchAnyTags(tags []string) bool {
 	}
 
 	for _, incoming := range tags {
-		for _, testTag := range t.Tags {
-			if incoming == testTag {
-				return true
-			}
+		if t.hasTag(t.Tags, incoming) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// hasTag returns true if the slice has the tag
+func (t Test) hasTag(tags []string, tag string) bool {
+	for _, testTag := range tags {
+		if tag == testTag {
+			return true
 		}
 	}
 
@@ -104,11 +109,10 @@ func (t Test) SetupMatchingVariants(variants []string) map[string]interface{} {
 }
 
 func (t Test) String() string {
-	return fmt.Sprintf(`id         : %s
-name       : %s
+	return fmt.Sprintf(`name       : %s
 desc       : %s
 author     : %s
 categories : %s
 variants   : %s
-`, t.id, t.Name, t.Description, t.Author, strings.Join(t.Tags, ", "), strings.Join(t.Variants.sorted(), ", "))
+`, t.Name, t.Description, t.Author, strings.Join(t.Tags, ", "), strings.Join(t.Variants.sorted(), ", "))
 }
