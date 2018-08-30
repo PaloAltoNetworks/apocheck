@@ -109,10 +109,11 @@ func (t Test) SetupMatchingVariants(variants []string) map[string]interface{} {
 }
 
 func (t Test) String() string {
-	return fmt.Sprintf(`name       : %s
+	return fmt.Sprintf(`id         : %s
+name       : %s
 desc       : %s
 author     : %s
 categories : %s
 variants   : %s
-`, t.Name, t.Description, t.Author, strings.Join(t.Tags, ", "), strings.Join(t.Variants.sorted(), ", "))
+`, t.id, t.Name, t.Description, t.Author, strings.Join(t.Tags, ", "), strings.Join(t.Variants.sorted(), ", "))
 }

@@ -151,28 +151,8 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m m
 				ti.stack = debug.Stack()
 			}()
 
-			t.test.id = NewUUID()
-			t.testInfo.testID = t.test.id
-
-			if t.test.Setup != nil {
-				data, td, err = t.test.Setup(t.ctx, t.testInfo)
-				if err != nil {
-					printSetupError(t, nil, err)
-					return
-				}
-
-				defer func() {
-					if r.skipTeardown {
-						t.testInfo.Write([]byte("Teardown skipped.")) //nolint
-					} else if td != nil {
-						td()
-					}
-				}()
-			}
-
-			start := time.Now()
-			ti.err = t.test.Function(ctx, TestInfo{
-				testID:          t.test.id,
+			subTestInfo := TestInfo{
+				testID:          NewUUID(),
 				testVariant:     t.testInfo.testVariant,
 				testVariantData: t.testInfo.testVariantData,
 				writer:          buf,
@@ -183,8 +163,27 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m m
 				data:            data,
 				Config:          r.config,
 				timeOfLastStep:  t.testInfo.timeOfLastStep,
-			})
+			}
 
+			if t.test.Setup != nil {
+				data, td, err = t.test.Setup(t.ctx, subTestInfo)
+				if err != nil {
+					printSetupError(t, nil, err)
+					return
+				}
+				subTestInfo.data = data
+
+				defer func() {
+					if r.skipTeardown {
+						subTestInfo.Write([]byte("Teardown skipped.")) //nolint
+					} else if td != nil {
+						td()
+					}
+				}()
+			}
+
+			start := time.Now()
+			ti.err = t.test.Function(ctx, subTestInfo)
 			ti.duration = time.Since(start)
 
 		}(currTest, i)
