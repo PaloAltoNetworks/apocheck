@@ -49,6 +49,7 @@ type testRunner struct {
 	publicTLSConfig  *tls.Config
 	verbose          bool
 	skipTeardown     bool
+	stopOnFailure    bool
 	token            string
 	account          string
 	config           string
@@ -66,23 +67,25 @@ func newTestRunner(
 	stress int,
 	verbose bool,
 	skipTeardown bool,
+	stopOnFailure bool,
 	token string,
 	account string,
 	config string,
 ) *testRunner {
 
 	return &testRunner{
-		privateAPI:   privateAPI,
-		publicAPI:    publicAPI,
-		concurrent:   concurrent,
-		resultsChan:  make(chan testRun, concurrent*stress),
-		setupErrs:    make(chan error),
-		status:       map[string]testRun{},
-		stress:       stress,
-		suite:        suite,
-		timeout:      timeout,
-		verbose:      verbose,
-		skipTeardown: skipTeardown,
+		privateAPI:    privateAPI,
+		publicAPI:     publicAPI,
+		concurrent:    concurrent,
+		resultsChan:   make(chan testRun, concurrent*stress),
+		setupErrs:     make(chan error),
+		status:        map[string]testRun{},
+		stress:        stress,
+		suite:         suite,
+		timeout:       timeout,
+		verbose:       verbose,
+		skipTeardown:  skipTeardown,
+		stopOnFailure: stopOnFailure,
 		info: &platform.Info{
 			BootstrapCert:    cert,
 			RootCAPool:       publicCAPool,
@@ -188,11 +191,14 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m m
 	}
 }
 
-func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
+func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) error {
 
 	sem := make(chan struct{}, r.concurrent)
+	done := make(chan struct{})
+	stop := make(chan struct{})
 
 	var wg sync.WaitGroup
+	var err error
 
 	for _, test := range r.suite.sorted() {
 
@@ -203,7 +209,9 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 			select {
 			case sem <- struct{}{}:
 			case <-ctx.Done():
-				return
+				return err
+			case <-stop:
+				break
 			}
 
 			variantValue := test.Variants[variantKey]
@@ -228,6 +236,20 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 					select {
 					case res := <-resultsCh:
 						results = append(results, res)
+
+						if res.err != nil {
+							err = res.err
+
+							if r.stopOnFailure {
+								appendResults(run, results, r.verbose)
+								fmt.Println(hdr.String())
+								fmt.Println(buf.String())
+								close(stop)
+
+								return
+							}
+						}
+
 						if len(results) == r.stress {
 							appendResults(run, results, r.verbose)
 							b = false
@@ -237,8 +259,10 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 					}
 				}
 
-				fmt.Println(hdr.String())
-				fmt.Println(buf.String())
+				if hdr.String() != "" || buf.String() != "" {
+					fmt.Println(hdr.String())
+					fmt.Println(buf.String())
+				}
 			}(testRun{
 				ctx:     ctx,
 				test:    test,
@@ -256,7 +280,17 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) {
 		}
 	}
 
-	wg.Wait()
+	go func() {
+		defer close(done)
+		wg.Wait()
+	}()
+
+	select {
+	case <-done:
+	case <-stop:
+	}
+
+	return err
 }
 
 func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
@@ -307,10 +341,12 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 
 	r.teardowns = make(chan TearDownFunction, len(suite))
 
-	r.execute(ctx, maniphttp.NewHTTPManipulatorWithTLS(api, username, token, namespace, tlsConfig))
+	if err := r.execute(ctx, maniphttp.NewHTTPManipulatorWithTLS(api, username, token, namespace, tlsConfig)); err != nil {
+		return fmt.Errorf("Failed test(s). Please check logs")
+	}
 
 	if ctx.Err() != nil {
-		return fmt.Errorf("Deadline exceeded. Try giving a higher time limit using --limit option (%s)", ctx.Err().Error())
+		return fmt.Errorf("Deadline exceeded. Try giving a higher time limit using --limit option (%s)", ctx.Err())
 	}
 
 	return nil

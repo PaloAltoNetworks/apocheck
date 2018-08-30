@@ -61,8 +61,7 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 	if !failed && !showOnSuccess {
 		output := fmt.Sprintf("%s\n",
 			goterm.Color(
-				fmt.Sprintf("ID: %s : %s : %s (variant %s) %s",
-					currTest.test.id,
+				fmt.Sprintf("%s : %s (variant %s) %s",
 					resultString,
 					currTest.test.Name,
 					currTest.testInfo.testVariant,
@@ -82,8 +81,7 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 	output := fmt.Sprintf("\n%s\n%s\n",
 		goterm.Bold(
 			goterm.Color(
-				fmt.Sprintf("ID: %s : %s : %s (variant %s)",
-					currTest.test.id,
+				fmt.Sprintf("%s : %s (variant %s)",
 					resultString,
 					currTest.test.Name,
 					currTest.testInfo.testVariant,

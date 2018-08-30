@@ -107,6 +107,7 @@ func NewCommand(
 				viper.GetInt("stress"),
 				viper.GetBool("verbose"),
 				viper.GetBool("skip-teardown"),
+				viper.GetBool("stop-on-failure"),
 				viper.GetString("token"),
 				viper.GetString("account"),
 				viper.GetString("config"),
@@ -132,6 +133,7 @@ func NewCommand(
 	cmdRunTests.Flags().BoolP("match-all", "M", false, "Match all tags specified")
 	cmdRunTests.Flags().StringSliceP("variant", "v", nil, "Only run tests with the given variants")
 	cmdRunTests.Flags().BoolP("skip-teardown", "S", false, "Skip teardown step")
+	cmdRunTests.Flags().BoolP("stop-on-failure", "X", false, "Stop on the first failed test")
 
 	rootCmd.AddCommand(
 		versionCmd,
