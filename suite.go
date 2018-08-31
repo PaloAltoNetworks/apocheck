@@ -8,11 +8,10 @@ import (
 
 type testSuite map[string]Test
 
-func (s testSuite) testsWithArgs(verbose, matchAll bool, tags, variants []string) testSuite {
+func (s testSuite) testsWithArgs(verbose, matchAll bool, tags []string) testSuite {
 
 	ts := testSuite{}
 
-	sort.Strings(variants)
 	if verbose {
 		fmt.Println("Running Tests:")
 	}
@@ -21,11 +20,6 @@ func (s testSuite) testsWithArgs(verbose, matchAll bool, tags, variants []string
 
 		if !t.MatchTags(tags, matchAll) {
 			continue
-		}
-
-		matchingVariants := t.SetupMatchingVariants(variants)
-		if matchingVariants != nil {
-			t.Variants = matchingVariants
 		}
 
 		if verbose {
@@ -42,7 +36,7 @@ func (s testSuite) testsWithArgs(verbose, matchAll bool, tags, variants []string
 	return ts
 }
 
-func (s testSuite) testsWithIDs(verbose bool, ids, variants []string) testSuite {
+func (s testSuite) testsWithIDs(verbose bool, ids []string) testSuite {
 	if len(ids) == 0 {
 		return s
 	}
@@ -59,11 +53,6 @@ func (s testSuite) testsWithIDs(verbose bool, ids, variants []string) testSuite 
 
 				if verbose {
 					fmt.Println(" - " + t.Name)
-				}
-
-				matchingVariants := t.SetupMatchingVariants(variants)
-				if matchingVariants != nil {
-					t.Variants = matchingVariants
 				}
 
 				if verbose {

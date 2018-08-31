@@ -153,8 +153,6 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m m
 
 			subTestInfo := TestInfo{
 				testID:          NewUUID(),
-				testVariant:     t.testInfo.testVariant,
-				testVariantData: t.testInfo.testVariantData,
 				writer:          buf,
 				iteration:       iteration,
 				timeout:         r.timeout,
@@ -201,82 +199,75 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) erro
 
 	for _, test := range r.suite.sorted() {
 
-		for _, variantKey := range test.Variants.sorted() {
+		wg.Add(1)
 
-			wg.Add(1)
+		select {
+		case sem <- struct{}{}:
+		case <-ctx.Done():
+			return err
+		case <-stop:
+			break
+		}
 
-			select {
-			case sem <- struct{}{}:
-			case <-ctx.Done():
-				return err
-			case <-stop:
-				break
-			}
+		go func(run testRun) {
 
-			variantValue := test.Variants[variantKey]
+			buf := &bytes.Buffer{}
+			hdr := &bytes.Buffer{}
 
-			go func(run testRun) {
+			run.testInfo.writer = buf
+			run.testInfo.header = hdr
 
-				buf := &bytes.Buffer{}
-				hdr := &bytes.Buffer{}
+			defer func() { wg.Done(); <-sem }()
 
-				run.testInfo.writer = buf
-				run.testInfo.header = hdr
+			resultsCh := make(chan testResult)
 
-				defer func() { wg.Done(); <-sem }()
+			go r.executeIteration(ctx, run, m, resultsCh)
 
-				resultsCh := make(chan testResult)
+			var results []testResult
 
-				go r.executeIteration(ctx, run, m, resultsCh)
+			for b := true; b; {
+				select {
+				case res := <-resultsCh:
+					results = append(results, res)
 
-				var results []testResult
+					if res.err != nil {
+						err = res.err
 
-				for b := true; b; {
-					select {
-					case res := <-resultsCh:
-						results = append(results, res)
-
-						if res.err != nil {
-							err = res.err
-
-							if r.stopOnFailure {
-								appendResults(run, results, r.verbose)
-								fmt.Println(hdr.String())
-								fmt.Println(buf.String())
-								close(stop)
-
-								return
-							}
-						}
-
-						if len(results) == r.stress {
+						if r.stopOnFailure {
 							appendResults(run, results, r.verbose)
-							b = false
+							fmt.Println(hdr.String())
+							fmt.Println(buf.String())
+							close(stop)
+
+							return
 						}
-					case <-ctx.Done():
+					}
+
+					if len(results) == r.stress {
+						appendResults(run, results, r.verbose)
 						b = false
 					}
+				case <-ctx.Done():
+					b = false
 				}
+			}
 
-				if hdr.String() != "" || buf.String() != "" {
-					fmt.Println(hdr.String())
-					fmt.Println(buf.String())
-				}
-			}(testRun{
-				ctx:     ctx,
-				test:    test,
-				verbose: r.verbose,
-				testInfo: TestInfo{
-					testVariant:     variantKey,
-					testVariantData: variantValue,
-					timeout:         r.timeout,
-					rootManipulator: m,
-					platformInfo:    r.info,
-					Config:          r.config,
-					timeOfLastStep:  time.Now(),
-				},
-			})
-		}
+			if hdr.String() != "" || buf.String() != "" {
+				fmt.Println(hdr.String())
+				fmt.Println(buf.String())
+			}
+		}(testRun{
+			ctx:     ctx,
+			test:    test,
+			verbose: r.verbose,
+			testInfo: TestInfo{
+				timeout:         r.timeout,
+				rootManipulator: m,
+				platformInfo:    r.info,
+				Config:          r.config,
+				timeOfLastStep:  time.Now(),
+			},
+		})
 	}
 
 	go func() {

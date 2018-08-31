@@ -23,10 +23,9 @@ func printSetupError(curTest testRun, recovery interface{}, err error) {
 	fmt.Printf("%s\n",
 		goterm.Bold(
 			goterm.Color(
-				fmt.Sprintf("%s FAIL %s (variant %s)",
+				fmt.Sprintf("%s FAIL %s",
 					curTest.test.id,
 					curTest.test.Name,
-					curTest.testInfo.testVariant,
 				),
 				goterm.YELLOW,
 			),
@@ -61,11 +60,10 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 	if !failed && !showOnSuccess {
 		output := fmt.Sprintf("%s\n",
 			goterm.Color(
-				fmt.Sprintf("ID: %s : %s : %s (variant %s) %s",
+				fmt.Sprintf("ID: %s : %s : %s %s",
 					currTest.test.id,
 					resultString,
 					currTest.test.Name,
-					currTest.testInfo.testVariant,
 					goterm.Color(fmt.Sprintf("it: %d, avg: %s", len(results), averageTime(results)), goterm.BLUE),
 				),
 				goterm.GREEN,
@@ -82,11 +80,10 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 	output := fmt.Sprintf("\n%s\n%s\n",
 		goterm.Bold(
 			goterm.Color(
-				fmt.Sprintf("ID: %s : %s : %s (variant %s)",
+				fmt.Sprintf("ID: %s : %s : %s",
 					currTest.test.id,
 					resultString,
 					currTest.test.Name,
-					currTest.testInfo.testVariant,
 				),
 				color),
 		),

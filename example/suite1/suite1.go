@@ -2,7 +2,6 @@ package suite1
 
 import (
 	"context"
-	"fmt"
 
 	"go.aporeto.io/apocheck"
 )
@@ -20,36 +19,6 @@ func init() {
 		},
 		Function: func(ctx context.Context, t apocheck.TestInfo) error {
 			apocheck.Step(t, "When I perform a test step", func() error { return nil })
-			return nil
-		},
-	})
-
-	apocheck.RegisterTest(apocheck.Test{
-		Name:        "Basic test to test apocheck variants",
-		Description: "This test uses variants in setup / teardown and test functions.",
-		Author:      "Satyam",
-		Tags:        []string{"variants"},
-		Variants: apocheck.TestVariants{
-			"no-data-variant": nil,
-			"data-variant":    "data-for-variant",
-		},
-		Setup: func(ctx context.Context, t apocheck.TestInfo) (interface{}, apocheck.TearDownFunction, error) {
-
-			variant, data := t.TestVariant()
-
-			setupStep := fmt.Sprintf("Given I have a setup step for variant %s with data %v", variant, data)
-			apocheck.Step(t, setupStep, func() error { return nil })
-
-			teardownStep := fmt.Sprintf("Then the teardown step for variant %s with data %v", variant, data)
-			return nil, func() { apocheck.Step(t, teardownStep, func() error { return nil }) }, nil
-		},
-		Function: func(ctx context.Context, t apocheck.TestInfo) error {
-
-			variant, data := t.TestVariant()
-
-			testStep := fmt.Sprintf("When I perform a test step for variant %s with data %v", variant, data)
-
-			apocheck.Step(t, testStep, func() error { return nil })
 			return nil
 		},
 	})

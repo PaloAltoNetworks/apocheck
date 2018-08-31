@@ -12,13 +12,8 @@ type Test struct {
 	Description string
 	Author      string
 	Tags        []string
-
-	// To accept reusability of test code, we accept variants which can run the same test
-	// multiple times, once for each variant with the information stored in the map.
-	Variants TestVariants
-
-	Setup    SetupFunction
-	Function TestFunction
+	Setup       SetupFunction
+	Function    TestFunction
 }
 
 // MatchTags matches all tags if --match-all is set otherwise matches any tag
@@ -87,33 +82,11 @@ func (t Test) hasTag(tags []string, tag string) bool {
 	return false
 }
 
-// SetupMatchingVariants reduces the variants to be run to ones passed in command line
-func (t Test) SetupMatchingVariants(variants []string) map[string]interface{} {
-
-	if len(variants) == 0 {
-		return nil
-	}
-
-	if t.Variants == nil {
-		return defaultTestVariant()
-	}
-
-	matchingVariants := make(map[string]interface{})
-	for _, v := range variants {
-		if value, ok := t.Variants[v]; ok {
-			matchingVariants[v] = value
-		}
-	}
-
-	return matchingVariants
-}
-
 func (t Test) String() string {
 	return fmt.Sprintf(`id         : %s
 name       : %s
 desc       : %s
 author     : %s
 categories : %s
-variants   : %s
-`, t.id, t.Name, t.Description, t.Author, strings.Join(t.Tags, ", "), strings.Join(t.Variants.sorted(), ", "))
+`, t.id, t.Name, t.Description, t.Author, strings.Join(t.Tags, ", "))
 }
