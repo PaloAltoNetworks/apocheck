@@ -292,18 +292,21 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 	var tlsConfig *tls.Config
 
 	if r.privateAPI == "" || r.token != "" {
+		// We want the integration tests to be able to run on our preprod/prod platform
+		// These platforms don't and can not expose the private API,
+		// In that case, we recreate a Platform Info structure
 
 		tlsConfig = &tls.Config{
 			InsecureSkipVerify: true, // nolint
 		}
 
-		pf, err := apiutils.GetPublicCA(subctx, r.publicAPI, tlsConfig)
+		certAuthority, err := apiutils.GetPublicCA(subctx, r.publicAPI, tlsConfig)
 		if err != nil {
 			return err
 		}
 
 		r.info.Platform = make(map[string]string)
-		r.info.Platform["ca-public"] = string(pf)
+		r.info.Platform["ca-public"] = string(certAuthority)
 		r.info.Platform["public-api-external"] = r.publicAPI
 
 		api = r.publicAPI
@@ -317,6 +320,7 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 		}
 
 	} else {
+		// In that case, we assume that platform is in under our control and can be open.
 
 		pf, err := apiutils.GetConfig(subctx, r.privateAPI, r.privateTLSConfig)
 		if err != nil {
@@ -327,6 +331,10 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 		tlsConfig = r.privateTLSConfig
 
 		r.info.Platform = pf
+
+		// In case of private API, we need to be able to inject
+		// a new internal api to access the private APIs exposed by private Services.
+		r.info.Platform["public-api-internal"] = r.privateAPI
 	}
 
 	r.teardowns = make(chan TearDownFunction, len(suite))

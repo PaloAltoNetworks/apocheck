@@ -51,7 +51,7 @@ func (t TestInfo) AccountNamespace() string { return fmt.Sprintf("/account-%s", 
 func (t TestInfo) PublicAPI() string { return t.platformInfo.Platform["public-api-external"] }
 
 // PrivateAPI returns the private api url.
-func (t TestInfo) PrivateAPI() string { return t.platformInfo.Platform["private-api-external"] }
+func (t TestInfo) PrivateAPI() string { return t.platformInfo.Platform["public-api-external"] }
 
 // SetupInfo returns the eventual object stored by the Setup function.
 func (t TestInfo) SetupInfo() interface{} { return t.data }
