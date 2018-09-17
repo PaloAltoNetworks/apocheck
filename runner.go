@@ -322,6 +322,10 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 	} else {
 		// In that case, we assume that platform is in under our control and can be open.
 
+		// We want to set InsecureSkipVerify to support deployments like docker
+		// swarm where we only have the IP address
+		r.privateTLSConfig.InsecureSkipVerify = true
+
 		pf, err := apiutils.GetConfig(subctx, r.privateAPI, r.privateTLSConfig)
 		if err != nil {
 			return err
