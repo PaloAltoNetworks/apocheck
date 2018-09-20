@@ -252,8 +252,10 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) erro
 				}
 			}
 
-			if hdr.String() != "" || buf.String() != "" {
+			if hdr.String() != "" {
 				fmt.Println(hdr.String())
+			}
+			if buf.String() != "" {
 				fmt.Println(buf.String())
 			}
 		}(testRun{

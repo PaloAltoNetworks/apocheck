@@ -58,11 +58,11 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 	}
 
 	if !failed && !showOnSuccess {
-		output := fmt.Sprintf("%s\n",
+		output := fmt.Sprintf("%s",
 			goterm.Color(
-				fmt.Sprintf("ID: %s : %s : %s %s",
-					currTest.test.id,
+				fmt.Sprintf("%s (%s): %s %s",
 					resultString,
+					currTest.test.id,
 					currTest.test.Name,
 					goterm.Color(fmt.Sprintf("it: %d, avg: %s", len(results), averageTime(results)), goterm.BLUE),
 				),
@@ -77,7 +77,7 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 		color = goterm.YELLOW
 	}
 
-	output := fmt.Sprintf("\n%s\n%s\n",
+	output := fmt.Sprintf("%s\n%s",
 		goterm.Bold(
 			goterm.Color(
 				fmt.Sprintf("ID: %s : %s : %s",
@@ -87,7 +87,7 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 				),
 				color),
 		),
-		wordwrap.WrapString(fmt.Sprintf("  %s — %s", currTest.test.Description, currTest.test.Author),
+		wordwrap.WrapString(fmt.Sprintf("%s — %s\n", currTest.test.Description, currTest.test.Author),
 			120,
 		),
 	)

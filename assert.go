@@ -56,5 +56,6 @@ func Step(t TestInfo, name string, step func() error) {
 	if err := step(); err != nil {
 		Assert(t, "step should not return any error", err, convey.ShouldBeNil)
 	}
-	fmt.Fprintf(t, "(%s)\n", time.Since(start).Round(time.Millisecond).String()) // nolint
+
+	fmt.Fprintf(t, "%s\n\n", goterm.Color(fmt.Sprintf("took: %s", time.Since(start).Round(time.Millisecond)), goterm.BLUE)) // nolint
 }
