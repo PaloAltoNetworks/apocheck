@@ -122,7 +122,7 @@ func NewCommand(
 	cmdRunTests.Flags().String("cert", os.ExpandEnv("$CERTS_FOLDER/system-cert.pem"), "Path to client certificate")
 	cmdRunTests.Flags().String("key-pass", "", "Password for the certificate key")
 	cmdRunTests.Flags().String("key", os.ExpandEnv("$CERTS_FOLDER/system-key.pem"), "Path to client certificate key")
-	cmdRunTests.Flags().String("api-private", "https://127.0.0.1:4444", "Address of the private api gateway")
+	cmdRunTests.Flags().String("api-private", "", "Address of the private api gateway")
 	cmdRunTests.Flags().String("api-public", "https://127.0.0.1:4443", "Address of the public api gateway")
 	cmdRunTests.Flags().String("token", "", "Access Token")
 	cmdRunTests.Flags().String("account", "", "Account Name")
