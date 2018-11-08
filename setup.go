@@ -48,12 +48,11 @@ func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespa
 			manipulate.ContextOptionNamespace(rootNamespace),
 		)
 
-		ns := &gaia.Namespace{Name: name}
+		ns := &gaia.Namespace{Name: name, ServiceCertificateValidity: "1h"}
 		if firstns == nil {
 			firstns = ns
 			firstNSmctx = mctx
 		}
-
 		if err = m.Create(mctx, ns); err != nil {
 			return nil, err
 		}
