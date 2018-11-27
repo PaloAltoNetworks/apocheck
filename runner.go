@@ -298,33 +298,7 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 	var api, username, token, namespace string
 	var tlsConfig *tls.Config
 
-	if r.token != "" {
-		// We want the integration tests to be able to run on our preprod/prod platform
-		// These platforms don't and can not expose the private API,
-		// In that case, we recreate a Platform Info structure
-		tlsConfig = &tls.Config{
-			InsecureSkipVerify: true, // nolint
-		}
-
-		certAuthority, err := apiutils.GetPublicCA(subctx, r.publicAPI, tlsConfig)
-		if err != nil {
-			return err
-		}
-
-		r.info.Platform = make(map[string]string)
-		r.info.Platform["ca-public"] = string(certAuthority)
-		r.info.Platform["public-api-external"] = r.publicAPI
-
-		api = r.publicAPI
-		namespace = fmt.Sprintf("/%s", r.account)
-		if r.token != "" {
-			username = "Bearer"
-			token = r.token
-		} else {
-			tlsConfig.RootCAs = r.info.RootCAPool
-			tlsConfig.Certificates = []tls.Certificate{r.info.SystemClientCert}
-		}
-	} else if r.appCreds != nil {
+	if r.appCreds != nil {
 		var err error
 		var creds *gaia.Credential
 
@@ -351,6 +325,32 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 		r.info.Platform = make(map[string]string)
 		r.info.Platform["ca-public"] = string(ca)
 		r.info.Platform["public-api-external"] = r.publicAPI
+	} else if r.token != "" || r.privateAPI == "" {
+		// We want the integration tests to be able to run on our preprod/prod platform
+		// These platforms don't and can not expose the private API,
+		// In that case, we recreate a Platform Info structure
+		tlsConfig = &tls.Config{
+			InsecureSkipVerify: true, // nolint
+		}
+
+		certAuthority, err := apiutils.GetPublicCA(subctx, r.publicAPI, tlsConfig)
+		if err != nil {
+			return err
+		}
+
+		r.info.Platform = make(map[string]string)
+		r.info.Platform["ca-public"] = string(certAuthority)
+		r.info.Platform["public-api-external"] = r.publicAPI
+
+		api = r.publicAPI
+		namespace = fmt.Sprintf("/%s", r.account)
+		if r.token != "" {
+			username = "Bearer"
+			token = r.token
+		} else {
+			tlsConfig.RootCAs = r.info.RootCAPool
+			tlsConfig.Certificates = []tls.Certificate{r.info.SystemClientCert}
+		}
 	} else if r.privateAPI != "" {
 		// In that case, we assume that platform is in under our control and can be open.
 		// We want to set InsecureSkipVerify to support deployments like docker
