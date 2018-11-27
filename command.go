@@ -70,12 +70,24 @@ func NewCommand(
 			// TODO: add argument check.
 			var certPoolPrivate, certPoolPublic *x509.CertPool
 			var cert tls.Certificate
+			var appCredsData []byte
 			var err error
 
-			if viper.GetString("token") == "" {
-				cert, certPoolPrivate, certPoolPublic, err = setupCerts()
-				if err != nil {
-					return err
+			// TODO: Remove token option completely
+			token := viper.GetString("token")
+			appCredsPath := viper.GetString("appcreds")
+
+			if token == "" {
+				if appCredsPath != "" {
+					appCredsData, err = ioutil.ReadFile(appCredsPath)
+					if err != nil {
+						return err
+					}
+				} else {
+					cert, certPoolPrivate, certPoolPublic, err = setupCerts()
+					if err != nil {
+						return err
+					}
 				}
 			}
 
@@ -107,9 +119,10 @@ func NewCommand(
 				viper.GetBool("verbose"),
 				viper.GetBool("skip-teardown"),
 				viper.GetBool("stop-on-failure"),
-				viper.GetString("token"),
+				token,
 				viper.GetString("account"),
 				viper.GetString("config"),
+				appCredsData,
 			).Run(ctx, suite)
 		},
 	}
@@ -125,6 +138,7 @@ func NewCommand(
 	cmdRunTests.Flags().String("api-private", "", "Address of the private api gateway")
 	cmdRunTests.Flags().String("api-public", "https://127.0.0.1:4443", "Address of the public api gateway")
 	cmdRunTests.Flags().String("token", "", "Access Token")
+	cmdRunTests.Flags().String("appcreds", "", "App credentials path")
 	cmdRunTests.Flags().String("account", "", "Account Name")
 	cmdRunTests.Flags().String("config", "", "Test Configuration")
 	cmdRunTests.Flags().StringSliceP("id", "i", nil, "Only run tests with the given identifier")

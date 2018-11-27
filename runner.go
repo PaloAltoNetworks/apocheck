@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"runtime/debug"
@@ -12,8 +13,10 @@ import (
 	"time"
 
 	"go.aporeto.io/addedeffect/apiutils"
+	"go.aporeto.io/gaia"
 	"go.aporeto.io/manipulate"
 	"go.aporeto.io/manipulate/maniphttp"
+	"go.aporeto.io/midgard-lib/client"
 	"go.aporeto.io/underwater/platform"
 )
 
@@ -53,6 +56,7 @@ type testRunner struct {
 	token            string
 	account          string
 	config           string
+	appCreds         []byte
 }
 
 func newTestRunner(
@@ -71,6 +75,7 @@ func newTestRunner(
 	token string,
 	account string,
 	config string,
+	appCreds []byte,
 ) *testRunner {
 
 	return &testRunner{
@@ -99,9 +104,10 @@ func newTestRunner(
 			RootCAs:      privateCAPool,
 			Certificates: []tls.Certificate{cert},
 		},
-		token:   token,
-		account: account,
-		config:  config,
+		token:    token,
+		account:  account,
+		config:   config,
+		appCreds: appCreds,
 	}
 }
 
@@ -189,7 +195,6 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m m
 }
 
 func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) error {
-
 	sem := make(chan struct{}, r.concurrent)
 	done := make(chan struct{})
 	stop := make(chan struct{})
@@ -293,11 +298,10 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 	var api, username, token, namespace string
 	var tlsConfig *tls.Config
 
-	if r.privateAPI == "" || r.token != "" {
+	if r.token != "" {
 		// We want the integration tests to be able to run on our preprod/prod platform
 		// These platforms don't and can not expose the private API,
 		// In that case, we recreate a Platform Info structure
-
 		tlsConfig = &tls.Config{
 			InsecureSkipVerify: true, // nolint
 		}
@@ -320,10 +324,35 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 			tlsConfig.RootCAs = r.info.RootCAPool
 			tlsConfig.Certificates = []tls.Certificate{r.info.SystemClientCert}
 		}
+	} else if r.appCreds != nil {
+		var err error
+		var creds *gaia.Credential
 
-	} else {
+		creds, tlsConfig, err = midgardclient.ParseCredentials(r.appCreds)
+		if err != nil {
+			return err
+		}
+
+		api = r.publicAPI
+		username = r.account
+		namespace = fmt.Sprintf("/%s", r.account)
+
+		mclient := midgardclient.NewClientWithTLS(api, tlsConfig)
+		token, err = mclient.IssueFromCertificate(context.TODO(), 5*time.Hour)
+		if err != nil {
+			return err
+		}
+
+		ca, err := base64.StdEncoding.DecodeString(creds.CertificateAuthority)
+		if err != nil {
+			return err
+		}
+
+		r.info.Platform = make(map[string]string)
+		r.info.Platform["ca-public"] = string(ca)
+		r.info.Platform["public-api-external"] = r.publicAPI
+	} else if r.privateAPI != "" {
 		// In that case, we assume that platform is in under our control and can be open.
-
 		// We want to set InsecureSkipVerify to support deployments like docker
 		// swarm where we only have the IP address
 		r.privateTLSConfig.InsecureSkipVerify = true
@@ -343,9 +372,18 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 		r.info.Platform["public-api-internal"] = r.privateAPI
 	}
 
-	r.teardowns = make(chan TearDownFunction, len(suite))
+	m, err := maniphttp.New(
+		context.Background(),
+		api,
+		maniphttp.OptionCredentials(username, token),
+		maniphttp.OptionNamespace(namespace),
+		maniphttp.OptionTLSConfig(tlsConfig))
+	if err != nil {
+		return err
+	}
 
-	if err := r.execute(ctx, maniphttp.NewHTTPManipulatorWithTLS(api, username, token, namespace, tlsConfig)); err != nil {
+	r.teardowns = make(chan TearDownFunction, len(suite))
+	if err := r.execute(ctx, m); err != nil {
 		return fmt.Errorf("Failed test(s). Please check logs")
 	}
 
