@@ -173,6 +173,7 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m m
 				data, td, err = t.test.Setup(t.ctx, subTestInfo)
 				if err != nil {
 					printSetupError(t, nil, err)
+					ti.err = err
 					return
 				}
 				subTestInfo.data = data
