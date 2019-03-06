@@ -16,7 +16,7 @@ import (
 	"go.aporeto.io/gaia"
 	"go.aporeto.io/manipulate"
 	"go.aporeto.io/manipulate/maniphttp"
-	"go.aporeto.io/midgard-lib/client"
+	midgardclient "go.aporeto.io/midgard-lib/client"
 	"go.aporeto.io/underwater/platform"
 )
 

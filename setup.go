@@ -12,7 +12,7 @@ import (
 	"go.aporeto.io/gaia"
 	"go.aporeto.io/manipulate"
 	"go.aporeto.io/manipulate/maniphttp"
-	"go.aporeto.io/midgard-lib/client"
+	midgardclient "go.aporeto.io/midgard-lib/client"
 )
 
 // Cleanup function is a type function.
@@ -97,6 +97,7 @@ func AuthenticateAccount(ctx context.Context, m manipulate.Manipulator, account 
 
 	endpoint := maniphttp.ExtractEndpoint(m)
 	tlsConfig := maniphttp.ExtractTLSConfig(m)
+	tlsConfig.Certificates = nil
 
 	c := midgardclient.NewClientWithTLS(endpoint, tlsConfig)
 
