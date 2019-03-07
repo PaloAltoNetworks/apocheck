@@ -5,18 +5,15 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"runtime/debug"
 	"sync"
 	"time"
 
-	"go.aporeto.io/addedeffect/apiutils"
-	"go.aporeto.io/gaia"
+	"github.com/gofrs/uuid"
 	"go.aporeto.io/manipulate"
 	"go.aporeto.io/manipulate/maniphttp"
-	midgardclient "go.aporeto.io/midgard-lib/client"
 	"go.aporeto.io/underwater/platform"
 )
 
@@ -37,81 +34,97 @@ type testResult struct {
 }
 
 type testRunner struct {
-	privateAPI       string
-	publicAPI        string
-	concurrent       int
-	info             *platform.Info
-	resultsChan      chan testRun
-	setupErrs        chan error
-	status           map[string]testRun
-	stress           int
-	suite            testSuite
-	teardowns        chan TearDownFunction
-	timeout          time.Duration
-	privateTLSConfig *tls.Config
-	publicTLSConfig  *tls.Config
-	verbose          bool
-	skipTeardown     bool
-	stopOnFailure    bool
-	token            string
-	account          string
-	config           string
-	appCreds         []byte
+	concurrent        int
+	info              *platform.Info
+	privateAPI        string
+	privateTLSConfig  *tls.Config
+	publicAPI         string
+	publicManipulator manipulate.Manipulator
+	publicTLSConfig   *tls.Config
+	resultsChan       chan testRun
+	rootManipulator   manipulate.Manipulator
+	setupErrs         chan error
+	skipTeardown      bool
+	status            map[string]testRun
+	stopOnFailure     bool
+	stress            int
+	suite             testSuite
+	teardowns         chan TearDownFunction
+	timeout           time.Duration
+	verbose           bool
 }
 
 func newTestRunner(
-	suite testSuite,
+	ctx context.Context,
 	privateAPI string,
 	privateCAPool *x509.CertPool,
+	systemCert *tls.Certificate,
 	publicAPI string,
 	publicCAPool *x509.CertPool,
-	cert tls.Certificate,
+	token string,
+	namespace string,
+	suite testSuite,
 	timeout time.Duration,
 	concurrent int,
 	stress int,
 	verbose bool,
 	skipTeardown bool,
 	stopOnFailure bool,
-	token string,
-	account string,
-	config string,
-	appCreds []byte,
 ) *testRunner {
 
+	publicTLSConfig := &tls.Config{
+		RootCAs: publicCAPool,
+	}
+	privateTLSConfig := &tls.Config{
+		RootCAs:      privateCAPool,
+		Certificates: []tls.Certificate{*systemCert},
+	}
+
+	// Public Manipulator
+	var publicManipulator manipulate.Manipulator
+	if token != "" {
+		publicManipulator, _ = maniphttp.New(
+			ctx,
+			publicAPI,
+			maniphttp.OptionToken(token),
+			maniphttp.OptionNamespace(namespace),
+			maniphttp.OptionTLSConfig(publicTLSConfig),
+		)
+	}
+
+	// private manipulator
+	var rootManipulator manipulate.Manipulator
+	if systemCert != nil {
+		rootManipulator, _ = maniphttp.New(
+			ctx,
+			privateAPI,
+			maniphttp.OptionNamespace(namespace),
+			maniphttp.OptionTLSConfig(privateTLSConfig),
+		)
+	}
+
 	return &testRunner{
-		privateAPI:    privateAPI,
-		publicAPI:     publicAPI,
-		concurrent:    concurrent,
-		resultsChan:   make(chan testRun, concurrent*stress),
-		setupErrs:     make(chan error),
-		status:        map[string]testRun{},
-		stress:        stress,
-		suite:         suite,
-		timeout:       timeout,
-		verbose:       verbose,
-		skipTeardown:  skipTeardown,
-		stopOnFailure: stopOnFailure,
-		info: &platform.Info{
-			BootstrapCert:    cert,
-			RootCAPool:       publicCAPool,
-			SystemCAPool:     privateCAPool,
-			SystemClientCert: cert,
-		},
-		publicTLSConfig: &tls.Config{
-			RootCAs: publicCAPool,
-		},
-		privateTLSConfig: &tls.Config{
-			RootCAs:      privateCAPool,
-			Certificates: []tls.Certificate{cert},
-		},
-		token:    token,
-		account:  account,
-		config:   config,
-		appCreds: appCreds,
+		concurrent:        concurrent,
+		privateAPI:        privateAPI,
+		privateTLSConfig:  privateTLSConfig,
+		publicAPI:         publicAPI,
+		publicManipulator: publicManipulator,
+		publicTLSConfig:   publicTLSConfig,
+		resultsChan:       make(chan testRun, concurrent*stress),
+		rootManipulator:   rootManipulator,
+		setupErrs:         make(chan error),
+		skipTeardown:      skipTeardown,
+		status:            map[string]testRun{},
+		stopOnFailure:     stopOnFailure,
+		stress:            stress,
+		suite:             suite,
+		timeout:           timeout,
+		verbose:           verbose,
 	}
 }
 
-func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m manipulate.Manipulator, results chan testResult) {
+func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, rootManipulator manipulate.Manipulator, publicManipulator manipulate.Manipulator, results chan testResult) {
+
 	sem := make(chan struct{}, r.concurrent)
 
 	for i := 0; i < r.stress; i++ {
@@ -158,15 +171,19 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m m
 			}()
 
 			subTestInfo := TestInfo{
-				testID:          NewUUID(),
-				writer:          buf,
-				iteration:       iteration,
-				timeout:         r.timeout,
-				rootManipulator: m,
-				platformInfo:    r.info,
-				data:            data,
-				Config:          r.config,
-				timeOfLastStep:  t.testInfo.timeOfLastStep,
+				data:              data,
+				iteration:         iteration,
+				platformInfo:      r.info,
+				privateAPI:        r.privateAPI,
+				privateTLSConfig:  r.privateTLSConfig,
+				publicAPI:         r.publicAPI,
+				publicManipulator: publicManipulator,
+				publicTLSConfig:   r.publicTLSConfig,
+				rootManipulator:   rootManipulator,
+				testID:            uuid.Must(uuid.NewV4()).String(),
+				timeOfLastStep:    t.testInfo.timeOfLastStep,
+				timeout:           r.timeout,
+				writer:            buf,
 			}
 
 			if t.test.Setup != nil {
@@ -195,7 +212,8 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, m m
 	}
 }
 
-func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) error {
+func (r *testRunner) execute(ctx context.Context, rootManipulator manipulate.Manipulator, publicManipulator manipulate.Manipulator) error {
+
 	sem := make(chan struct{}, r.concurrent)
 	done := make(chan struct{})
 	stop := make(chan struct{})
@@ -227,7 +245,7 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) erro
 
 			resultsCh := make(chan testResult)
 
-			go r.executeIteration(ctx, run, m, resultsCh)
+			go r.executeIteration(ctx, run, rootManipulator, publicManipulator, resultsCh)
 
 			var results []testResult
 
@@ -269,11 +287,15 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) erro
 			test:    test,
 			verbose: r.verbose,
 			testInfo: TestInfo{
-				timeout:         r.timeout,
-				rootManipulator: m,
-				platformInfo:    r.info,
-				Config:          r.config,
-				timeOfLastStep:  time.Now(),
+				platformInfo:      r.info,
+				privateAPI:        r.privateAPI,
+				privateTLSConfig:  r.privateTLSConfig,
+				publicAPI:         r.publicAPI,
+				publicManipulator: publicManipulator,
+				publicTLSConfig:   r.publicTLSConfig,
+				rootManipulator:   rootManipulator,
+				timeOfLastStep:    time.Now(),
+				timeout:           r.timeout,
 			},
 		})
 	}
@@ -293,98 +315,8 @@ func (r *testRunner) execute(ctx context.Context, m manipulate.Manipulator) erro
 
 func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 
-	subctx, subCancel := context.WithTimeout(ctx, 3*time.Second)
-	defer subCancel()
-
-	var api, username, token, namespace string
-	var tlsConfig *tls.Config
-
-	if r.appCreds != nil {
-		var err error
-		var creds *gaia.Credential
-
-		creds, tlsConfig, err = midgardclient.ParseCredentials(r.appCreds)
-		if err != nil {
-			return err
-		}
-
-		api = r.publicAPI
-		username = r.account
-		namespace = fmt.Sprintf("/%s", r.account)
-
-		mclient := midgardclient.NewClientWithTLS(api, tlsConfig)
-		token, err = mclient.IssueFromCertificate(context.TODO(), 5*time.Hour)
-		if err != nil {
-			return err
-		}
-
-		ca, err := base64.StdEncoding.DecodeString(creds.CertificateAuthority)
-		if err != nil {
-			return err
-		}
-
-		r.info.Platform = make(map[string]string)
-		r.info.Platform["ca-public"] = string(ca)
-		r.info.Platform["public-api-external"] = r.publicAPI
-	} else if r.token != "" || r.privateAPI == "" {
-		// We want the integration tests to be able to run on our preprod/prod platform
-		// These platforms don't and can not expose the private API,
-		// In that case, we recreate a Platform Info structure
-		tlsConfig = &tls.Config{
-			InsecureSkipVerify: true, // nolint
-		}
-
-		certAuthority, err := apiutils.GetPublicCA(subctx, r.publicAPI, tlsConfig)
-		if err != nil {
-			return err
-		}
-
-		r.info.Platform = make(map[string]string)
-		r.info.Platform["ca-public"] = string(certAuthority)
-		r.info.Platform["public-api-external"] = r.publicAPI
-
-		api = r.publicAPI
-		namespace = fmt.Sprintf("/%s", r.account)
-		if r.token != "" {
-			username = "Bearer"
-			token = r.token
-		} else {
-			tlsConfig.RootCAs = r.info.RootCAPool
-			tlsConfig.Certificates = []tls.Certificate{r.info.SystemClientCert}
-		}
-	} else if r.privateAPI != "" {
-		// In that case, we assume that platform is in under our control and can be open.
-		// We want to set InsecureSkipVerify to support deployments like docker
-		// swarm where we only have the IP address
-		r.privateTLSConfig.InsecureSkipVerify = true
-
-		pf, err := apiutils.GetConfig(subctx, r.privateAPI, r.privateTLSConfig)
-		if err != nil {
-			return err
-		}
-
-		api = r.privateAPI
-		tlsConfig = r.privateTLSConfig
-
-		r.info.Platform = pf
-
-		// In case of private API, we need to be able to inject
-		// a new internal api to access the private APIs exposed by private Services.
-		r.info.Platform["public-api-internal"] = r.privateAPI
-	}
-
-	m, err := maniphttp.New(
-		context.Background(),
-		api,
-		maniphttp.OptionCredentials(username, token),
-		maniphttp.OptionNamespace(namespace),
-		maniphttp.OptionTLSConfig(tlsConfig))
-	if err != nil {
-		return err
-	}
-
 	r.teardowns = make(chan TearDownFunction, len(suite))
-	if err := r.execute(ctx, m); err != nil {
+	if err := r.execute(ctx, r.rootManipulator, r.publicManipulator); err != nil {
 		return fmt.Errorf("Failed test(s). Please check logs")
 	}
 
