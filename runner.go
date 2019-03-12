@@ -84,7 +84,7 @@ func newTestRunner(
 
 	// Public Manipulator
 	var publicManipulator manipulate.Manipulator
-	if token != "" {
+	if token != "" && publicAPI != "" {
 		publicManipulator, _ = maniphttp.New(
 			ctx,
 			publicAPI,
@@ -96,7 +96,7 @@ func newTestRunner(
 
 	// private manipulator
 	var rootManipulator manipulate.Manipulator
-	if systemCert != nil {
+	if systemCert != nil && privateAPI != "" {
 		rootManipulator, _ = maniphttp.New(
 			ctx,
 			privateAPI,
