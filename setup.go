@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"go.aporeto.io/elemental"
 	"go.aporeto.io/gaia"
@@ -101,6 +102,8 @@ func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespa
 // For other events, set apiPath to ""
 func WaitForPushEvent(ctx context.Context, m manipulate.Manipulator, apiPath string, recursive bool, isWaitingFor func(*elemental.Event) bool) error {
 
+	fmt.Println("DEPRECATED: apocheck.WaitForPushEvent is deprecated. Switch to apocheck.ListenForPushEvent")
+
 	var subscriber manipulate.Subscriber
 
 	if apiPath == "" {
@@ -138,4 +141,66 @@ func WaitForPushEvent(ctx context.Context, m manipulate.Manipulator, apiPath str
 			return fmt.Errorf("waiting for push canceled: %s", ctx.Err())
 		}
 	}
+}
+
+// ListenForPushEvent returns a channel what will contain an error if the push event is not passing the verifier
+// in the given timeout, or nil if it does.
+func ListenForPushEvent(ctx context.Context, m manipulate.Manipulator, recursive bool, verifier func(*elemental.Event) bool) chan error {
+
+	ch := make(chan error)
+	connected := make(chan struct{}, 2)
+
+	send := func(err error) {
+		select {
+		case ch <- err:
+		case <-time.After(5 * time.Second):
+			fmt.Printf("apocheck.ListenForPushEvent: unable to publish err: %s\n", err)
+		}
+	}
+
+	go func() {
+		subscriber := maniphttp.NewSubscriber(m, recursive)
+		subscriber.Start(ctx, nil)
+
+		for {
+			select {
+			case err := <-subscriber.Errors():
+				send(err)
+				return
+
+			case evt := <-subscriber.Events():
+				if verifier(evt) {
+					send(nil)
+					return
+				}
+
+			case st := <-subscriber.Status():
+				switch st {
+
+				case manipulate.SubscriberStatusInitialConnection:
+					connected <- struct{}{}
+
+				case manipulate.SubscriberStatusInitialConnectionFailure:
+					send(fmt.Errorf("waiting for push canceled: subscriber status connect failed"))
+					return
+
+				case manipulate.SubscriberStatusDisconnection:
+					send(fmt.Errorf("waiting for push canceled: subscriber status disconnected"))
+					return
+				}
+
+			case <-ctx.Done():
+				send(fmt.Errorf("waiting for push canceled: %s", ctx.Err()))
+				return
+			}
+		}
+	}()
+
+	select {
+	case <-connected:
+	case <-ctx.Done():
+		go func() { send(fmt.Errorf("unable to connect to push channel: timeout")) }()
+	}
+
+	return ch
 }
