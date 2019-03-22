@@ -162,7 +162,7 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, roo
 					return
 				}
 
-				err, ok := r.(assestionError)
+				err, ok := r.(assertionError)
 				if ok {
 					ti.err = err
 					return
