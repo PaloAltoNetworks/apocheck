@@ -67,7 +67,7 @@ func AssertPush(
 	subctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 
 	evtch := make(chan *elemental.Event)
-	errCh := listenForPushEvent(subctx, m, func(evt *elemental.Event) bool {
+	errCh := ListenForPushEvent(subctx, m, func(evt *elemental.Event) bool {
 		if evt.Identity != identity.Name || evt.Type != eventType {
 			return false
 		}
@@ -118,7 +118,7 @@ func AssertNoPush(
 
 	subctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 
-	errCh := listenForPushEvent(subctx, m, func(evt *elemental.Event) bool {
+	errCh := ListenForPushEvent(subctx, m, func(evt *elemental.Event) bool {
 		return evt.Identity == identity.Name && evt.Type == eventType
 	}, options...)
 

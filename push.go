@@ -10,7 +10,8 @@ import (
 	"go.aporeto.io/manipulate/maniphttp"
 )
 
-func listenForPushEvent(ctx context.Context, m manipulate.Manipulator, verifier func(*elemental.Event) bool, options ...maniphttp.SubscriberOption) chan error {
+// ListenForPushEvent listen for a event
+func ListenForPushEvent(ctx context.Context, m manipulate.Manipulator, verifier func(*elemental.Event) bool, options ...maniphttp.SubscriberOption) chan error {
 
 	ch := make(chan error)
 	connected := make(chan struct{}, 2)
