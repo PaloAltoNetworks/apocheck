@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"go.aporeto.io/gaia"
 	"go.aporeto.io/manipulate"
@@ -97,19 +98,22 @@ func CreateNamespaces(ctx context.Context, m manipulate.Manipulator, rootNamespa
 
 // CreateNamespace creates the namespace with the given name in the given namespace.
 // It returns the created namespace, a manipulate.Context pointing to the namespace and an eventual error.
-func CreateNamespace(ctx context.Context, m manipulate.Manipulator, name string, namespace string) (*gaia.Namespace, manipulate.Context, error) {
+func CreateNamespace(ctx context.Context, m manipulate.Manipulator, name string, mctx manipulate.Context) (*gaia.Namespace, manipulate.Context, error) {
+
 	ns := gaia.NewNamespace()
 	ns.Name = name
 
 	options := []manipulate.ContextOption{}
-	if namespace != "" {
-		options = append(options, manipulate.ContextOptionNamespace(namespace))
+
+	if mctx == nil {
+		mctx = manipulate.NewContext(ctx, options...)
 	}
 
-	mctx := manipulate.NewContext(ctx, options...)
 	if err := m.Create(mctx, ns); err != nil {
 		return nil, nil, err
 	}
+
+	defer func() { <-time.After(500 * time.Millisecond) }() // let a bit of time for auth caches.
 
 	return ns, manipulate.NewContext(ctx, manipulate.ContextOptionNamespace(ns.Name)), nil
 }
