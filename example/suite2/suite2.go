@@ -27,7 +27,7 @@ func init() {
 			fmt.Fprintln(t, "add a policy")       // nolint
 			fmt.Fprintln(t, "send traffic")       // nolint
 
-			return fmt.Errorf("Unable to send traffic")
+			return fmt.Errorf("unable to send traffic")
 		},
 	})
 

@@ -44,8 +44,8 @@ func Assert(t TestInfo, message string, actual interface{}, f func(interface{}, 
 		panic(r)
 	}
 
-	fmt.Fprintf(t, goterm.Color(fmt.Sprintf("- [PASS] %s", message), goterm.GREEN)) // nolint
-	fmt.Fprintln(t)                                                                 // nolint
+	fmt.Fprint(t, goterm.Color(fmt.Sprintf("- [PASS] %s", message), goterm.GREEN)) // nolint
+	fmt.Fprintln(t)                                                                // nolint
 }
 
 // Step runs a particular step.

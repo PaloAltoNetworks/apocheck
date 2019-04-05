@@ -168,7 +168,7 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, roo
 					return
 				}
 
-				ti.err = fmt.Errorf("Unhandled panic: %s", r)
+				ti.err = fmt.Errorf("unhandled panic: %s", r)
 				ti.stack = debug.Stack()
 			}()
 
@@ -223,6 +223,7 @@ func (r *testRunner) execute(ctx context.Context, rootManipulator manipulate.Man
 	var wg sync.WaitGroup
 	var err error
 
+L:
 	for _, test := range r.suite.sorted() {
 
 		wg.Add(1)
@@ -232,7 +233,7 @@ func (r *testRunner) execute(ctx context.Context, rootManipulator manipulate.Man
 		case <-ctx.Done():
 			return err
 		case <-stop:
-			break
+			break L
 		}
 
 		go func(run testRun) {
@@ -319,11 +320,11 @@ func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
 
 	r.teardowns = make(chan TearDownFunction, len(suite))
 	if err := r.execute(ctx, r.rootManipulator, r.publicManipulator); err != nil {
-		return fmt.Errorf("Failed test(s). Please check logs")
+		return fmt.Errorf("failed test(s). please check logs")
 	}
 
 	if ctx.Err() != nil {
-		return fmt.Errorf("Deadline exceeded. Try giving a higher time limit using --limit option (%s)", ctx.Err())
+		return fmt.Errorf("deadline exceeded. Try giving a higher time limit using --limit option (%s)", ctx.Err())
 	}
 
 	return nil

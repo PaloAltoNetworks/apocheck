@@ -19,10 +19,8 @@ type Test struct {
 // MatchTags matches all tags if --match-all is set otherwise matches any tag
 func (t Test) MatchTags(tags []string, matchAll bool) bool {
 
-	m := make([]string, 0)
-	for _, incoming := range tags {
-		m = append(m, incoming)
-	}
+	m := make([]string, len(tags))
+	copy(m, tags)
 
 	if !matchAll {
 		return t.matchAnyTags(m)

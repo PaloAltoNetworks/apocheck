@@ -58,16 +58,15 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 	}
 
 	if !failed && !showOnSuccess {
-		output := fmt.Sprintf("%s",
-			goterm.Color(
-				fmt.Sprintf("%s (%s): %s %s",
-					resultString,
-					currTest.test.id,
-					currTest.test.Name,
-					goterm.Color(fmt.Sprintf("it: %d, avg: %s", len(results), averageTime(results)), goterm.BLUE),
-				),
-				goterm.GREEN,
-			))
+		output := goterm.Color(
+			fmt.Sprintf("%s (%s): %s %s",
+				resultString,
+				currTest.test.id,
+				currTest.test.Name,
+				goterm.Color(fmt.Sprintf("it: %d, avg: %s", len(results), averageTime(results)), goterm.BLUE),
+			),
+			goterm.GREEN,
+		)
 		currTest.testInfo.WriteHeader([]byte(output)) // nolint
 		return
 	}
@@ -92,7 +91,7 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 		),
 	)
 	currTest.testInfo.WriteHeader([]byte(output)) // nolint
-	return
+	return failed
 }
 
 func appendResults(currTest testRun, results []testResult, showOnSuccess bool) {
