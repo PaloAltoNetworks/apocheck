@@ -14,6 +14,7 @@ type Test struct {
 	Tags        []string
 	Setup       SetupFunction
 	Function    TestFunction
+	SuiteName   string
 }
 
 // MatchTags matches all tags if --match-all is set otherwise matches any tag
@@ -38,14 +39,14 @@ func (t Test) matchAllTags(tags []string) bool {
 
 	for _, incoming := range tags {
 		if strings.HasPrefix(incoming, "~") {
-			if t.hasTag(t.Tags, strings.TrimPrefix(incoming, "~")) {
+			if t.hasTag(strings.TrimPrefix(incoming, "~")) {
 				return false
 			}
 
 			continue
 		}
 
-		if !t.hasTag(t.Tags, incoming) {
+		if !t.hasTag(incoming) {
 			return false
 		}
 	}
@@ -61,7 +62,7 @@ func (t Test) matchAnyTags(tags []string) bool {
 	}
 
 	for _, incoming := range tags {
-		if t.hasTag(t.Tags, incoming) {
+		if t.hasTag(incoming) {
 			return true
 		}
 	}
@@ -70,7 +71,13 @@ func (t Test) matchAnyTags(tags []string) bool {
 }
 
 // hasTag returns true if the slice has the tag
-func (t Test) hasTag(tags []string, tag string) bool {
+func (t Test) hasTag(tag string) bool {
+
+	tags := t.Tags
+	if t.SuiteName != "" {
+		tags = append(tags, fmt.Sprintf("suite:%s", strings.ToLower(t.SuiteName)))
+	}
+
 	for _, testTag := range tags {
 		if tag == testTag {
 			return true

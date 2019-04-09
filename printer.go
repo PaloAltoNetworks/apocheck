@@ -57,13 +57,18 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 		resultString = "PASS"
 	}
 
+	sname := "none"
+	if currTest.test.SuiteName != "" {
+		sname = currTest.test.SuiteName
+	}
+
 	if !failed && !showOnSuccess {
 		output := goterm.Color(
 			fmt.Sprintf("%s (%s): %s %s",
 				resultString,
 				currTest.test.id,
 				currTest.test.Name,
-				goterm.Color(fmt.Sprintf("it: %d, avg: %s", len(results), averageTime(results)), goterm.BLUE),
+				goterm.Color(fmt.Sprintf("it: %d, avg: %s, suite: %s", len(results), averageTime(results), sname), goterm.BLUE),
 			),
 			goterm.GREEN,
 		)
