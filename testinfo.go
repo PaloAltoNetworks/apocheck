@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 
+	"go.aporeto.io/elemental"
 	"go.aporeto.io/gaia"
 	"go.aporeto.io/manipulate"
 	"go.aporeto.io/underwater/platform"
@@ -27,6 +28,7 @@ type TestInfo struct {
 	timeOfLastStep    time.Time
 	timeout           time.Duration
 	writer            io.Writer
+	encoding          elemental.EncodingType
 }
 
 // Account returns a gaia Account object that can be used for the test.

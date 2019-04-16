@@ -56,6 +56,7 @@ func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.
 		ctx,
 		t.publicAPI,
 		maniphttp.OptionToken(token),
+		maniphttp.OptionEncoding(t.encoding),
 		maniphttp.OptionNamespace("/"+account.Name),
 		maniphttp.OptionTLSConfig(t.publicTLSConfig),
 	)

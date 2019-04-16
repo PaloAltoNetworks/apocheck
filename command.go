@@ -12,7 +12,9 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.aporeto.io/elemental"
 	"go.aporeto.io/tg/tglib"
+	"go.uber.org/zap"
 )
 
 // NewCommand generates a new CLI for regolith
@@ -110,6 +112,16 @@ func NewCommand(
 				}
 			}
 
+			var encoding elemental.EncodingType
+			switch viper.GetString("encoding") {
+			case "json":
+				encoding = elemental.EncodingTypeJSON
+			case "msgpack":
+				encoding = elemental.EncodingTypeMSGPACK
+			default:
+				zap.L().Fatal("Unknown encoding type", zap.String("encoding", viper.GetString("encoding")))
+			}
+
 			return newTestRunner(
 				ctx,
 				viper.GetString("api-private"),
@@ -128,6 +140,7 @@ func NewCommand(
 				viper.GetBool("verbose"),
 				viper.GetBool("skip-teardown"),
 				viper.GetBool("stop-on-failure"),
+				encoding,
 			).Run(ctx, suite)
 		},
 	}
@@ -146,6 +159,7 @@ func NewCommand(
 	cmdRunTests.Flags().String("namespace", "/", "Account Name")
 
 	// Parameters to configure test behaviors
+	cmdRunTests.Flags().String("encoding", "msgpack", "Default encoding to use to talk to the API")
 	cmdRunTests.Flags().BoolP("verbose", "V", false, "Show logs even on success")
 	cmdRunTests.Flags().DurationP("limit", "l", 5*time.Minute, "Execution time limit.")
 	cmdRunTests.Flags().IntP("concurrent", "c", 20, "Max number of concurrent tests.")

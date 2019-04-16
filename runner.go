@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"go.aporeto.io/elemental"
 	"go.aporeto.io/manipulate"
 	"go.aporeto.io/manipulate/maniphttp"
 	"go.aporeto.io/underwater/platform"
@@ -52,6 +53,7 @@ type testRunner struct {
 	teardowns         chan TearDownFunction
 	timeout           time.Duration
 	verbose           bool
+	encoding          elemental.EncodingType
 }
 
 func newTestRunner(
@@ -70,6 +72,7 @@ func newTestRunner(
 	verbose bool,
 	skipTeardown bool,
 	stopOnFailure bool,
+	encoding elemental.EncodingType,
 ) *testRunner {
 
 	publicTLSConfig := &tls.Config{
@@ -90,6 +93,7 @@ func newTestRunner(
 			publicAPI,
 			maniphttp.OptionToken(token),
 			maniphttp.OptionNamespace(namespace),
+			maniphttp.OptionEncoding(encoding),
 			maniphttp.OptionTLSConfig(publicTLSConfig),
 		)
 	}
@@ -102,6 +106,7 @@ func newTestRunner(
 			privateAPI,
 			maniphttp.OptionNamespace(namespace),
 			maniphttp.OptionTLSConfig(privateTLSConfig),
+			maniphttp.OptionEncoding(encoding),
 		)
 	}
 
@@ -122,6 +127,7 @@ func newTestRunner(
 		suite:             suite,
 		timeout:           timeout,
 		verbose:           verbose,
+		encoding:          encoding,
 	}
 }
 
@@ -186,6 +192,7 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, roo
 				timeOfLastStep:    t.testInfo.timeOfLastStep,
 				timeout:           r.timeout,
 				writer:            buf,
+				encoding:          r.encoding,
 			}
 
 			if t.test.Setup != nil {
@@ -299,6 +306,7 @@ L:
 				rootManipulator:   rootManipulator,
 				timeOfLastStep:    time.Now(),
 				timeout:           r.timeout,
+				encoding:          r.encoding,
 			},
 		})
 	}
