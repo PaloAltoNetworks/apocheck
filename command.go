@@ -161,7 +161,7 @@ func NewCommand(
 	// Parameters to configure test behaviors
 	cmdRunTests.Flags().String("encoding", "msgpack", "Default encoding to use to talk to the API")
 	cmdRunTests.Flags().BoolP("verbose", "V", false, "Show logs even on success")
-	cmdRunTests.Flags().DurationP("limit", "l", 5*time.Minute, "Execution time limit.")
+	cmdRunTests.Flags().DurationP("limit", "l", 20*time.Minute, "Execution time limit.")
 	cmdRunTests.Flags().IntP("concurrent", "c", 20, "Max number of concurrent tests.")
 	cmdRunTests.Flags().IntP("stress", "s", 1, "Number of time to run each time in parallel.")
 	cmdRunTests.Flags().StringSliceP("id", "i", nil, "Only run tests with the given identifier")
