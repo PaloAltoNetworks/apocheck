@@ -79,10 +79,14 @@ func newTestRunner(
 		RootCAs:            publicCAPool,
 		InsecureSkipVerify: true, // nolint
 	}
-	privateTLSConfig := &tls.Config{
-		RootCAs:            privateCAPool,
-		Certificates:       []tls.Certificate{*systemCert},
-		InsecureSkipVerify: true, // nolint
+
+	privateTLSConfig := &tls.Config{}
+	if systemCert != nil && privateCAPool != nil {
+		privateTLSConfig = &tls.Config{
+			RootCAs:            privateCAPool,
+			Certificates:       []tls.Certificate{*systemCert},
+			InsecureSkipVerify: true, // nolint
+		}
 	}
 
 	// Public Manipulator

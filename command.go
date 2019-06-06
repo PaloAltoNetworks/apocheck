@@ -145,16 +145,27 @@ func NewCommand(
 		},
 	}
 
+	defaultCaCertPrivate := ""
+	defaultCert := ""
+	defaultKey := ""
+	defaultCaCertPublic := ""
+	cf := os.Getenv("CERTS_FOLDER")
+	if cf != "" {
+		defaultCaCertPrivate = os.ExpandEnv("$CERTS_FOLDER/ca-chain-system.pem")
+		defaultCert = os.ExpandEnv("$CERTS_FOLDER/system-cert.pem")
+		defaultKey = os.ExpandEnv("$CERTS_FOLDER/system-key.pem")
+		defaultCaCertPublic = os.ExpandEnv("$CERTS_FOLDER/ca-chain-public.pem")
+	}
 	// Parameters to connect to private API
 	cmdRunTests.Flags().String("api-private", "https://127.0.0.1:4444", "Address of the private api gateway")
-	cmdRunTests.Flags().String("cacert-private", os.ExpandEnv("$CERTS_FOLDER/ca-chain-system.pem"), "Path to the private api ca certificate")
-	cmdRunTests.Flags().String("cert", os.ExpandEnv("$CERTS_FOLDER/system-cert.pem"), "Path to client certificate")
+	cmdRunTests.Flags().String("cacert-private", defaultCaCertPrivate, "Path to the private api ca certificate")
+	cmdRunTests.Flags().String("cert", defaultCert, "Path to client certificate")
 	cmdRunTests.Flags().String("key-pass", "", "Password for the certificate key")
-	cmdRunTests.Flags().String("key", os.ExpandEnv("$CERTS_FOLDER/system-key.pem"), "Path to client certificate key")
+	cmdRunTests.Flags().String("key", defaultKey, "Path to client certificate key")
 
 	// Parameters to connect to public API
 	cmdRunTests.Flags().String("api-public", "https://127.0.0.1:4443", "Address of the public api gateway")
-	cmdRunTests.Flags().String("cacert-public", os.ExpandEnv("$CERTS_FOLDER/ca-chain-public.pem"), "Path to the public api ca certificate")
+	cmdRunTests.Flags().String("cacert-public", defaultCaCertPublic, "Path to the public api ca certificate")
 	cmdRunTests.Flags().String("token", "", "Access Token")
 	cmdRunTests.Flags().String("namespace", "/", "Account Name")
 
