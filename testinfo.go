@@ -36,10 +36,9 @@ func (t TestInfo) Account(password string) *gaia.Account {
 
 	// nolint
 	return &gaia.Account{
-		Name:                     t.AccountName(),
-		Password:                 password,
-		Email:                    fmt.Sprintf("user@%s.com", t.AccountName()),
-		LDAPConnSecurityProtocol: gaia.AccountLDAPConnSecurityProtocolTLS,
+		Name:     t.AccountName(),
+		Password: password,
+		Email:    fmt.Sprintf("user@%s.com", t.AccountName()),
 	}
 }
 
