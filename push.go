@@ -22,7 +22,7 @@ type assertPushConfig struct {
 
 func newAssertPushConfig() assertPushConfig {
 	return assertPushConfig{
-		positiveTimeout: 10 * time.Second,
+		positiveTimeout: 20 * time.Second,
 		negativeTimeout: 3 * time.Second,
 	}
 }
