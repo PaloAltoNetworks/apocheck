@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"go.aporeto.io/underwater/ibatcher"
+
 	"github.com/buger/goterm"
 	wordwrap "github.com/mitchellh/go-wordwrap"
 )
@@ -99,12 +101,29 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 	return failed
 }
 
-func appendResults(currTest testRun, results []testResult, showOnSuccess bool) {
+func appendResults(run testRun, results []testResult, showOnSuccess bool, batcher ibatcher.Batcher) {
+
+	if batcher != nil {
+		batcher.Push(
+			statsReport{
+				ID:       run.test.id,
+				Suite:    run.test.SuiteName,
+				Name:     run.test.Name,
+				Duration: int(averageTime(results)),
+				Value: func() int {
+					if hasErrors(results) {
+						return 0
+					}
+					return 1
+				}(),
+			}.point(run.name),
+		)
+	}
 
 	printLock.Lock()
 	defer printLock.Unlock()
 
-	failed := createHeader(currTest, results, showOnSuccess)
+	failed := createHeader(run, results, showOnSuccess)
 
 	for _, result := range results {
 		output := ""
@@ -132,7 +151,7 @@ func appendResults(currTest testRun, results []testResult, showOnSuccess bool) {
 		if len(result.stack) > 0 {
 			output += fmt.Sprintf("    Test panic:\n\n%s\n", string(result.stack))
 		}
-		currTest.testInfo.Write([]byte(output)) // nolint
+		run.testInfo.Write([]byte(output)) // nolint
 	}
 }
 
