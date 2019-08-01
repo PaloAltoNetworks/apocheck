@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"flag"
 	"fmt"
 	"hash/fnv"
 	"io/ioutil"
@@ -20,52 +19,51 @@ import (
 )
 
 var (
-	defaultClient influxdb.Client
-	defaultDBName string
+	currentClient         influxdb.Client
+	currentInfluxDBClient string
+	currentBuildID        string
 )
 
 // InitUnitTestMetricsReporter initializes the unit tests metric reporter
 // for a package. This must be at least once in the tested package in a init()
 // function.
 //
-// This will install the following flags to go test command:
-//  -apocheck.metrics.influxdb-address: address of the influxDB to report. If empty, reporting is disabled
-//  -apocheck.metrics.influxdb-db: database to use (default: apocheck)
-//  -apocheck.metrics.influxdb-user: username to use to connect to influxDB
-//  -apocheck.metrics.influxdb-pass: password associated to the username
-//  -apocheck.metrics.influxdb-tls-ca: path to the CA to trust for influxDB
-//  -apocheck.metrics.influxdb-tls-cert: path to a client certificate to use to connect to influxDB
-//  -apocheck.metrics.influxdb-tls-cert-key: path to the key associated to the client certificate
-//  -apocheck.metrics.influxdb-tls-cert-key-pass: passkey to use to decrypt private key
+// It uses the following env to configure influx reporting:
+//  APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_ADDRESS: address of the influxDB to report. If empty, reporting is disabled
+//  APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_DB: database to use (default: apocheck)
+//  APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_USER: username to use to connect to influxDB
+//  APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_PASS: password associated to the username
+//  APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_CA: path to the CA to trust for influxDB
+//  APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_CERT: path to a client certificate to use to connect to influxDB
+//  APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_CERT_KEY: path to the key associated to the client certificate
+//  APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_CERT_KEY_PASS: passkey to use to decrypt private key
 func InitUnitTestMetricsReporter() {
 
-	if defaultClient != nil {
+	if currentClient != nil {
 		return
 	}
 
-	var influxAddr string
-	var influxDB string
-	var influxUser string
-	var influxPass string
-	var influxTLSCAPath string
-	var influxTLSCertPath string
-	var influxTLSCertKeyPath string
-	var influxTLSCertKeyPass string
-
-	flag.StringVar(&influxAddr, "apocheck.metrics.influxdb-address", "", "If set, reports test metrics to influxb")
-	flag.StringVar(&influxDB, "apocheck.metrics.influxdb-db", "apocheck", "Database name")
-	flag.StringVar(&influxUser, "apocheck.metrics.influxdb-user", "admin", "InfluxDB username")
-	flag.StringVar(&influxPass, "apocheck.metrics.influxdb-pass", "aporeto", "InfluxDB password")
-	flag.StringVar(&influxTLSCAPath, "apocheck.metrics.influxdb-tls-ca", "", "Path to the CA")
-	flag.StringVar(&influxTLSCertPath, "apocheck.metrics.influxdb-tls-cert", "", "Path to the client certificate")
-	flag.StringVar(&influxTLSCertKeyPath, "apocheck.metrics.influxdb-tls-cert-key", "", "Path to the client certificate's key")
-	flag.StringVar(&influxTLSCertKeyPass, "apocheck.metrics.influxdb-tls-cert-key-pass", "", "Passkey for the client certificate's key")
-
-	flag.Parse()
-
+	influxAddr := os.Getenv("APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_ADDRESS")
 	if influxAddr == "" {
 		return
 	}
+
+	buildID := os.Getenv("APOCHECK_UNIT_TESTS_BUILD_ID")
+	if buildID == "" {
+		buildID = "dev"
+	}
+
+	influxDB := os.Getenv("APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_DB")
+	if influxDB == "" {
+		influxDB = "apocheck"
+	}
+
+	influxUser := os.Getenv("APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_USER")
+	influxPass := os.Getenv("APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_PASS")
+	influxTLSCAPath := os.Getenv("APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_CA")
+	influxTLSCertPath := os.Getenv("APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_CERT")
+	influxTLSCertKeyPath := os.Getenv("APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_CERT_KEY")
+	influxTLSCertKeyPass := os.Getenv("APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_CERT_KEY_PASS")
 
 	client, err := makeInfluxDBClient(
 		influxAddr,
@@ -80,8 +78,9 @@ func InitUnitTestMetricsReporter() {
 		panic(fmt.Sprintf("unable to initialize influxdb client: %s", err))
 	}
 
-	defaultClient = client
-	defaultDBName = influxDB
+	currentClient = client
+	currentBuildID = buildID
+	currentInfluxDBClient = influxDB
 }
 
 // Measure can be called in a unit test to measure the execution time of
@@ -94,7 +93,7 @@ func InitUnitTestMetricsReporter() {
 //      }
 func Measure(t *testing.T) func() {
 
-	if defaultClient == nil {
+	if currentClient == nil {
 		return func() {}
 	}
 
@@ -104,7 +103,7 @@ func Measure(t *testing.T) func() {
 	}
 
 	pkg := strings.Replace(getFrame(1).Function, fmt.Sprintf(".%s", t.Name()), "", 1)
-	cfg := influxdb.BatchPointsConfig{Database: defaultDBName}
+	cfg := influxdb.BatchPointsConfig{Database: currentInfluxDBClient}
 	start := time.Now()
 
 	return func() {
@@ -117,6 +116,7 @@ func Measure(t *testing.T) func() {
 		batch.AddPoint(
 			statsReport{
 				ID:       fmt.Sprintf("%x", h.Sum32()),
+				BuildID:  currentBuildID,
 				Suite:    pkg,
 				Name:     t.Name(),
 				Duration: int(time.Since(start)),
@@ -128,7 +128,7 @@ func Measure(t *testing.T) func() {
 				}(),
 			}.point("apocheck_unit_tests"),
 		)
-		if err := defaultClient.Write(batch); err != nil {
+		if err := currentClient.Write(batch); err != nil {
 			fmt.Fprintf(os.Stderr, "unable to post point: %s", err)
 		}
 	}
@@ -138,10 +138,10 @@ type statsReport struct {
 	// 1 means OK. Everything else is an error.
 	Value    int
 	Duration int
+	BuildID  string
 	ID       string
 	Name     string
 	Suite    string
-	Message  string
 }
 
 func (s statsReport) point(measurementName string) *influxdb.Point {
@@ -152,10 +152,10 @@ func (s statsReport) point(measurementName string) *influxdb.Point {
 			"id":    s.ID,
 			"name":  s.Name,
 			"suite": s.Suite,
+			"build": s.BuildID,
 		},
 		map[string]interface{}{ // fields
 			"duration": s.Duration,
-			"message":  s.Message,
 			"value":    s.Value,
 		},
 	)

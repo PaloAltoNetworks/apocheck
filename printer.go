@@ -107,6 +107,7 @@ func appendResults(run testRun, results []testResult, showOnSuccess bool, batche
 		batcher.Push(
 			statsReport{
 				ID:       run.test.id,
+				BuildID:  run.buildID,
 				Suite:    run.test.SuiteName,
 				Name:     run.test.Name,
 				Duration: int(averageTime(results)),
