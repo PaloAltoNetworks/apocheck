@@ -15,10 +15,12 @@ import (
 	"go.aporeto.io/elemental"
 	"go.aporeto.io/manipulate"
 	"go.aporeto.io/manipulate/maniphttp"
+	"go.aporeto.io/underwater/ibatcher"
 	"go.aporeto.io/underwater/platform"
 )
 
 type testRun struct {
+	name     string
 	ctx      context.Context
 	test     Test
 	testInfo TestInfo
@@ -36,7 +38,10 @@ type testResult struct {
 
 type testRunner struct {
 	concurrent        int
+	encoding          elemental.EncodingType
 	info              *platform.Info
+	metricsBatcher    ibatcher.Batcher
+	name              string
 	privateAPI        string
 	privateTLSConfig  *tls.Config
 	publicAPI         string
@@ -53,11 +58,11 @@ type testRunner struct {
 	teardowns         chan TearDownFunction
 	timeout           time.Duration
 	verbose           bool
-	encoding          elemental.EncodingType
 }
 
 func newTestRunner(
 	ctx context.Context,
+	name string,
 	privateAPI string,
 	privateCAPool *x509.CertPool,
 	systemCert *tls.Certificate,
@@ -73,6 +78,7 @@ func newTestRunner(
 	skipTeardown bool,
 	stopOnFailure bool,
 	encoding elemental.EncodingType,
+	metricsBatcher ibatcher.Batcher,
 ) *testRunner {
 
 	publicTLSConfig := &tls.Config{
@@ -132,6 +138,8 @@ func newTestRunner(
 		timeout:           timeout,
 		verbose:           verbose,
 		encoding:          encoding,
+		metricsBatcher:    metricsBatcher,
+		name:              name,
 	}
 }
 
@@ -263,7 +271,8 @@ L:
 
 			var results []testResult
 
-			for b := true; b; {
+		L2:
+			for {
 				select {
 				case res := <-resultsCh:
 					results = append(results, res)
@@ -272,7 +281,7 @@ L:
 						err = res.err
 
 						if r.stopOnFailure {
-							appendResults(run, results, r.verbose)
+							appendResults(run, results, r.verbose, r.metricsBatcher)
 							fmt.Println(hdr.String())
 							fmt.Println(buf.String())
 							close(stop)
@@ -282,11 +291,11 @@ L:
 					}
 
 					if len(results) == r.stress {
-						appendResults(run, results, r.verbose)
-						b = false
+						appendResults(run, results, r.verbose, r.metricsBatcher)
+						break L2
 					}
 				case <-ctx.Done():
-					b = false
+					break L2
 				}
 			}
 
@@ -298,6 +307,7 @@ L:
 			}
 		}(testRun{
 			ctx:     ctx,
+			name:    r.name,
 			test:    test,
 			verbose: r.verbose,
 			testInfo: TestInfo{
