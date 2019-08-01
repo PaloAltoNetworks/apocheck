@@ -152,7 +152,7 @@ func NewCommand(
 
 			return newTestRunner(
 				ctx,
-				name,
+				viper.GetString("build-id"),
 				viper.GetString("api-private"),
 				caPoolPrivate,
 				systemCert,
@@ -212,8 +212,9 @@ func NewCommand(
 	cmdRunTests.Flags().BoolP("stop-on-failure", "X", false, "Stop on the first failed test")
 
 	// Parameters to configure stats reporting
+	cmdRunTests.Flags().String("build-id", "dev", "Build Identifier")
 	cmdRunTests.Flags().String("influxdb-address", "", "If set, reports test metrics to influxb")
-	cmdRunTests.Flags().String("influxdb-db", "apocheckmetrics", "Database name")
+	cmdRunTests.Flags().String("influxdb-db", "apocheck", "Database name")
 	cmdRunTests.Flags().String("influxdb-user", "", "InfluxDB username")
 	cmdRunTests.Flags().String("influxdb-pass", "", "InfluxDB password")
 	cmdRunTests.Flags().String("influxdb-tls-ca", "", "Path to the CA")

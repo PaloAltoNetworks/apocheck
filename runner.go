@@ -20,7 +20,7 @@ import (
 )
 
 type testRun struct {
-	name     string
+	buildID  string
 	ctx      context.Context
 	test     Test
 	testInfo TestInfo
@@ -41,7 +41,7 @@ type testRunner struct {
 	encoding          elemental.EncodingType
 	info              *platform.Info
 	metricsBatcher    ibatcher.Batcher
-	name              string
+	buildID           string
 	privateAPI        string
 	privateTLSConfig  *tls.Config
 	publicAPI         string
@@ -62,7 +62,7 @@ type testRunner struct {
 
 func newTestRunner(
 	ctx context.Context,
-	name string,
+	buildID string,
 	privateAPI string,
 	privateCAPool *x509.CertPool,
 	systemCert *tls.Certificate,
@@ -139,7 +139,7 @@ func newTestRunner(
 		verbose:           verbose,
 		encoding:          encoding,
 		metricsBatcher:    metricsBatcher,
-		name:              name,
+		buildID:           buildID,
 	}
 }
 
@@ -307,7 +307,7 @@ L:
 			}
 		}(testRun{
 			ctx:     ctx,
-			name:    r.name,
+			buildID: r.buildID,
 			test:    test,
 			verbose: r.verbose,
 			testInfo: TestInfo{
