@@ -116,7 +116,7 @@ func appendResults(run testRun, results []testResult, showOnSuccess bool, batche
 					}
 					return 1
 				}(),
-			}.point(run.name),
+			}.point("apocheck_integ_tests"),
 		)
 	}
 

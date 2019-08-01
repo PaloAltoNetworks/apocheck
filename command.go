@@ -124,11 +124,11 @@ func NewCommand(
 			}
 
 			var batcher ibatcher.Batcher
+
 			if viper.GetString("influxdb-address") != "" {
-				batcher, err = makeInfluxClient(
-					ctx,
+
+				client, err := makeInfluxDBClient(
 					viper.GetString("influxdb-address"),
-					viper.GetString("influxdb-db"),
 					viper.GetString("influxdb-user"),
 					viper.GetString("influxdb-pass"),
 					viper.GetString("influxdb-tls-ca"),
@@ -140,10 +140,14 @@ func NewCommand(
 					return err
 				}
 
-				batcher.Start(ctx)
-				defer func() {
-					time.Sleep(2100 * time.Millisecond) // let the batcher flush on stop
-				}()
+				batcher, err = makeInfluxDBBatcher(ctx, client, viper.GetString("influxdb-db"))
+				if err != nil {
+					return err
+				}
+
+				wg := batcher.Start(ctx)
+
+				defer func() { cancel(); wg.Wait(); _ = client.Close() }()
 			}
 
 			return newTestRunner(
