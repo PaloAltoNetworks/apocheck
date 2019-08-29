@@ -1,4 +1,4 @@
-module go.aporeto.io/apocheck/v2
+module go.aporeto.io/apocheck
 
 go 1.12
 
