@@ -6,7 +6,7 @@ PROJECT_VERSION ?= $(lastword $(shell git tag --sort version:refname --merged $(
 PROJECT_RELEASE ?= dev
 
 export GO111MODULE = on
-export GOPRIVATE = 'go.aporeto.io/*,github.com/aporeto-inc/*'
+export GOPRIVATE = go.aporeto.io,github.com/aporeto-inc
 
 
 ci: lint test
