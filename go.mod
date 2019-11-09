@@ -8,9 +8,9 @@ require (
 	go.aporeto.io/elemental v1.100.1-0.20191106210659-e203ff490472
 	go.aporeto.io/gaia v1.94.1-0.20191106220741-a441e4075c35
 	go.aporeto.io/manipulate v1.114.1-0.20191106232233-df9195aa3b4d
-	go.aporeto.io/midgard-lib v1.69.1-0.20191106220827-4b141087e4e0
-	go.aporeto.io/tg v1.34.1-0.20191011180623-ff16c87217a1
-	go.aporeto.io/underwater v1.69.1-0.20191109023050-afdae6cd0bce
+	go.aporeto.io/midgard-lib v1.69.1-0.20191109023317-11c2a73eb0ee
+	go.aporeto.io/tg v1.34.1-0.20191109023217-abc7ad30b2e6
+	go.aporeto.io/underwater v1.69.1-0.20191109023308-b2210577279b
 )
 
 require (
@@ -19,6 +19,6 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.0
 	github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337
 	github.com/spf13/cobra v0.0.5
-	github.com/spf13/viper v1.4.0
+	github.com/spf13/viper v1.5.0
 	go.uber.org/zap v1.10.0
 )
