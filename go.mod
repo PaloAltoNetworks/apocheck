@@ -5,12 +5,12 @@ go 1.13
 // Aporeto
 require (
 	github.com/aporeto-inc/influxdb1-client v0.0.0-20191112013944-16d78ec0c871
-	go.aporeto.io/elemental v1.100.1-0.20200617155434-2d1f67120246
-	go.aporeto.io/gaia v1.94.1-0.20200617172901-82733d6076e8
-	go.aporeto.io/manipulate v1.114.1-0.20200617155545-c800a8af26b3
-	go.aporeto.io/midgard-lib v1.69.2-0.20200619184632-6089f4a3c036
-	go.aporeto.io/tg v1.34.1-0.20200515195223-79e45f8c54f8
-	go.aporeto.io/underwater v1.122.1-0.20200619184621-787cd815db3f
+	go.aporeto.io/elemental v1.100.1-0.20200729012332-b8c6e84fe209
+	go.aporeto.io/gaia v1.94.1-0.20200729012413-20e45ef2cb2e
+	go.aporeto.io/manipulate v1.121.1-0.20200729012406-957188e018ad
+	go.aporeto.io/midgard-lib v1.69.2-0.20200729012505-b0f62682f4fb
+	go.aporeto.io/tg v1.34.1-0.20200625070346-1dca773a2406
+	go.aporeto.io/underwater v1.126.2-0.20200729012454-f84fb08f6d06
 )
 
 require (
