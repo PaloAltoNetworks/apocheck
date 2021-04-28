@@ -10,7 +10,7 @@ require (
 	go.aporeto.io/manipulate v1.121.1-0.20210428215522-39bf8f541c77
 	go.aporeto.io/midgard-lib v1.69.2-0.20210428215706-71d01c410185
 	go.aporeto.io/tg v1.34.1-0.20210427202027-51db463efa40
-	go.aporeto.io/underwater v1.158.1-0.20210428215650-58af43a339d5
+	go.aporeto.io/underwater v1.159.0
 )
 
 require (
