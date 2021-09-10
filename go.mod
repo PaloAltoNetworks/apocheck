@@ -5,12 +5,12 @@ go 1.13
 // Aporeto
 require (
 	github.com/aporeto-inc/influxdb1-client v0.0.0-20191112013944-16d78ec0c871
-	go.aporeto.io/elemental v1.100.1-0.20210706184354-966eab3720af
-	go.aporeto.io/gaia v1.94.1-0.20210824221000-5f46e0956013
-	go.aporeto.io/manipulate v1.121.1-0.20210716232320-78183f8e8655
-	go.aporeto.io/midgard-lib v1.69.2-0.20210826173206-5ff20c084bd9
+	go.aporeto.io/elemental v1.100.1-0.20210902231953-3a4b35f01a40
+	go.aporeto.io/gaia v1.94.1-0.20210910195508-d49258616e51
+	go.aporeto.io/manipulate v1.121.1-0.20210910195501-bc86bac17f0d
+	go.aporeto.io/midgard-lib v1.69.2-0.20210910195650-8a441e5f7963
 	go.aporeto.io/tg v1.34.1-0.20210528201128-159c302ba155
-	go.aporeto.io/underwater v1.186.1-0.20210826173159-47174eff1720
+	go.aporeto.io/underwater v1.190.1-0.20210910195634-708d97968a9a
 )
 
 require (
@@ -21,5 +21,5 @@ require (
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.1
-	go.uber.org/zap v1.15.0
+	go.uber.org/zap v1.19.0
 )
