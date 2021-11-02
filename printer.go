@@ -2,7 +2,7 @@ package apocheck
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -133,7 +133,7 @@ func appendResults(run testRun, results []testResult, showOnSuccess bool, batche
 			continue
 		}
 
-		data, err := ioutil.ReadAll(result.reader)
+		data, err := io.ReadAll(result.reader)
 		if err != nil {
 			panic(err)
 		}

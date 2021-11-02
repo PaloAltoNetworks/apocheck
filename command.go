@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"time"
@@ -238,7 +237,7 @@ func setupPublicCA(caPublicPath string) (*x509.CertPool, error) {
 	}
 
 	if caPublicPath != "" {
-		data, err := ioutil.ReadFile(caPublicPath)
+		data, err := os.ReadFile(caPublicPath)
 		if err != nil {
 			return nil, err
 		}
@@ -251,7 +250,7 @@ func setupPublicCA(caPublicPath string) (*x509.CertPool, error) {
 
 func setupPrivateCA(caSystemPath string) (*x509.CertPool, error) {
 
-	data, err := ioutil.ReadFile(caSystemPath)
+	data, err := os.ReadFile(caSystemPath)
 	if err != nil {
 		return nil, err
 	}

@@ -6,7 +6,6 @@ import (
 	"crypto/x509"
 	"fmt"
 	"hash/fnv"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"strings"
@@ -172,7 +171,7 @@ func makeInfluxDBClient(addr string, user string, pass string, caPath string, ce
 	tlsConfig := &tls.Config{}
 
 	if caPath != "" {
-		cadata, err := ioutil.ReadFile(caPath)
+		cadata, err := os.ReadFile(caPath)
 		if err != nil {
 			return nil, fmt.Errorf("unable to read ca: %s", err)
 		}
