@@ -2,9 +2,9 @@ package apocheck
 
 import "fmt"
 
-func listTests() error {
+func listTests(suite testSuite) error {
 
-	for _, test := range mainTestSuite.sorted() {
+	for _, test := range suite.sorted() {
 		fmt.Printf("%s\n", test)
 	}
 

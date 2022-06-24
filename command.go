@@ -55,9 +55,13 @@ func NewCommand(
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			return listTests()
+			suite := filterSuite()
+			return listTests(suite)
 		},
 	}
+
+	cmdListTests.Flags().StringSliceP("id", "i", nil, "Only run tests with the given identifier")
+	cmdListTests.Flags().StringSliceP("tag", "t", nil, "Only run tests with the given tags")
 
 	var cmdRunTests = &cobra.Command{
 		Use:           "test",
@@ -100,17 +104,7 @@ func NewCommand(
 			ctx, cancel := context.WithTimeout(context.Background(), viper.GetDuration("limit"))
 			defer cancel()
 
-			suite := mainTestSuite
-
-			ids := viper.GetStringSlice("id")
-			if len(ids) > 0 {
-				suite = mainTestSuite.testsWithIDs(viper.GetBool("verbose"), ids)
-			} else {
-				tags := viper.GetStringSlice("tag")
-				if len(tags) > 0 {
-					suite = mainTestSuite.testsWithArgs(viper.GetBool("verbose"), viper.GetBool("match-all"), tags)
-				}
-			}
+			suite := filterSuite()
 
 			var encoding elemental.EncodingType
 			switch viper.GetString("encoding") {
@@ -274,4 +268,20 @@ func setupCerts(certPath string, keyPath string, keyPass string) (*tls.Certifica
 	}
 
 	return &cert, nil
+}
+
+// filterSuite filters the suite based on ids and/or tags
+func filterSuite() testSuite {
+	s := mainTestSuite
+
+	ids := viper.GetStringSlice("id")
+	if len(ids) > 0 {
+		s = mainTestSuite.testsWithIDs(viper.GetBool("verbose"), ids)
+	} else {
+		tags := viper.GetStringSlice("tag")
+		if len(tags) > 0 {
+			s = mainTestSuite.testsWithArgs(viper.GetBool("verbose"), viper.GetBool("match-all"), tags)
+		}
+	}
+	return s
 }
