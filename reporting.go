@@ -28,14 +28,14 @@ var (
 // function.
 //
 // It uses the following env to configure influx reporting:
-//  APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_ADDRESS: address of the influxDB to report. If empty, reporting is disabled
-//  APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_DB: database to use (default: apocheck)
-//  APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_USER: username to use to connect to influxDB
-//  APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_PASS: password associated to the username
-//  APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_CA: path to the CA to trust for influxDB
-//  APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_CERT: path to a client certificate to use to connect to influxDB
-//  APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_CERT_KEY: path to the key associated to the client certificate
-//  APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_CERT_KEY_PASS: passkey to use to decrypt private key
+// - APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_ADDRESS: address of the influxDB to report. If empty, reporting is disabled
+// - APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_DB: database to use (default: apocheck)
+// - APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_USER: username to use to connect to influxDB
+// - APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_PASS: password associated to the username
+// - APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_CA: path to the CA to trust for influxDB
+// - APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_CERT: path to a client certificate to use to connect to influxDB
+// - APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_CERT_KEY: path to the key associated to the client certificate
+// - APOCHECK_UNIT_TESTS_METRICS_INFLUXDB_CERT_KEY_PASS: passkey to use to decrypt private key
 func InitUnitTestMetricsReporter() {
 
 	if currentClient != nil {
@@ -86,10 +86,11 @@ func InitUnitTestMetricsReporter() {
 // a unit test. It returns a function you need to call when the test is done.
 //
 // For instance:
-//      func TestSuff(t *testing.T) {
-//          defer apocheck.Measure(t)()
-//          // test stuff
-//      }
+//
+//	func TestSuff(t *testing.T) {
+//	    defer apocheck.Measure(t)()
+//	    // test stuff
+//	}
 func Measure(t *testing.T) func() {
 
 	if currentClient == nil {
