@@ -1,0 +1,99 @@
+include:
+  - project: 'prismacloud/devops/pcs-gestalt/anchors'
+    ref: main
+    file:
+      - '/.gitlab-ci/.gitlab-container-registry-login.yml'
+  
+  - project: 'prismacloud/pcn/concourse-pipelines'
+    ref: master
+    file:
+      - /gitlab/.gcp-container-registry-login/.gcp-container-registry-login.yml
+      - /gitlab/.build-ci/.build-ci.yml
+      - /gitlab/.push/.load-versions.yml
+      - /gitlab/.push/.push-charts.yml
+      - /gitlab/.push/.push-artifacts.yml
+      - /gitlab/.push/.push-git-tag.yml
+      - /gitlab/.push/.push-image.yml
+      - /gitlab/.init/.init-github.yml
+      - /gitlab/.init/.init-docker.yml
+      - /gitlab/.init/.init-gcloud.yml
+      - /gitlab/.integration-tests/.integration-test.yml
+      - /gitlab/.integration-tests/.trigger-integration-test.yml
+
+# Only run when branch is master or release branch or if it's a merge request
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'master'
+    - if: $CI_COMMIT_BRANCH =~ /release-*.*.*/
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+stages:
+  - build-trigger
+  - build
+  - trigger-integration-test
+  - push
+
+default:
+  image: $CI_REGISTRY/prismacloud/container-registry/domingo:master-staged
+  tags:
+  - dev
+  - docker
+
+variables:
+  FULL_CONTAINER_REGISTRY: $CI_REGISTRY/prismacloud/container-registry
+  FULL_PR_CONTAINER_REGISTRY: "gcr.io/aporetodev"
+  BUILDER_MILESTONES: "staging"
+  GIT_MILESTONES: "staging"
+  BUILDER_SKIP_BUILD: "false"
+  BUILD_DOCKER_IMAGE: "false"
+  BUILDER_PUSH_CHARTS: "false"
+  GCP_PROJECT: cns-ci
+
+build-trigger:
+  stage: build-trigger
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: manual
+  before_script:
+    - !reference [.init-github, before_script]
+  script:
+    - export GOPRIVATE=go.aporeto.io,github.com/aporeto-inc,git.scm.prismacloud.io/prismacloud/pcn
+    - echo "Fetch jojo"
+    - go install go.aporeto.io/concourse-tools/tools/jojo@latest
+    - echo "Execute jojo"
+    - jojo build
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR/comment.json
+    expire_in: 20 mins
+
+build:
+  stage: build
+  dependencies:
+    - build-trigger
+  before_script:
+    - !reference [.root-gitlab-container-registry-login, before_script]
+    - !reference [.gcp-container-registry-login, before_script]
+    - !reference [.init-github, before_script]
+    - !reference [.init-docker, before_script]
+    - !reference [.init-gcloud, before_script]
+  script:
+    - !reference [.build, script]
+    - !reference [.load-versions, script]
+  artifacts:
+    name: "binaries-cache-$CI_COMMIT_REF_SLUG"
+    paths:
+      - $CI_PROJECT_DIR/artifacts/src_branch
+      - $CI_PROJECT_DIR/artifacts/src_semver
+      - $CI_PROJECT_DIR/artifacts/src_sha
+      - $CI_PROJECT_DIR/artifacts/src_pr
+      - $CI_PROJECT_DIR/artifacts/git_staged
+      - $CI_PROJECT_DIR/artifacts/branch
+
+push-git-tag:
+  stage: push
+  dependencies:
+    - build
+  script:
+    - !reference [.load-versions, script]
+    - !reference [.push-git-tag, script]
