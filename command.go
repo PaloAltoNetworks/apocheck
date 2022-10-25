@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"go.aporeto.io/underwater/ibatcher"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.aporeto.io/elemental"
@@ -116,33 +114,6 @@ func NewCommand(
 				zap.L().Fatal("Unknown encoding type", zap.String("encoding", viper.GetString("encoding")))
 			}
 
-			var batcher ibatcher.Batcher
-
-			if viper.GetString("influxdb-address") != "" {
-
-				client, err := makeInfluxDBClient(
-					viper.GetString("influxdb-address"),
-					viper.GetString("influxdb-user"),
-					viper.GetString("influxdb-pass"),
-					viper.GetString("influxdb-tls-ca"),
-					viper.GetString("influxdb-tls-cert"),
-					viper.GetString("influxdb-tls-cert-key"),
-					viper.GetString("influxdb-tls-cert-key-pass"),
-				)
-				if err != nil {
-					return err
-				}
-
-				batcher, err = makeInfluxDBBatcher(ctx, client, viper.GetString("influxdb-db"))
-				if err != nil {
-					return err
-				}
-
-				wg := batcher.Start(ctx)
-
-				defer func() { cancel(); wg.Wait(); _ = client.Close() }()
-			}
-
 			return newTestRunner(
 				ctx,
 				viper.GetString("build-id"),
@@ -163,7 +134,6 @@ func NewCommand(
 				viper.GetBool("skip-teardown"),
 				viper.GetBool("stop-on-failure"),
 				encoding,
-				batcher,
 			).Run(ctx, suite)
 		},
 	}
@@ -203,17 +173,6 @@ func NewCommand(
 	cmdRunTests.Flags().BoolP("match-all", "M", false, "Match all tags specified")
 	cmdRunTests.Flags().BoolP("skip-teardown", "S", false, "Skip teardown step")
 	cmdRunTests.Flags().BoolP("stop-on-failure", "X", false, "Stop on the first failed test")
-
-	// Parameters to configure stats reporting
-	cmdRunTests.Flags().String("build-id", "dev", "Build Identifier")
-	cmdRunTests.Flags().String("influxdb-address", "", "If set, reports test metrics to influxb")
-	cmdRunTests.Flags().String("influxdb-db", "apocheck", "Database name")
-	cmdRunTests.Flags().String("influxdb-user", "", "InfluxDB username")
-	cmdRunTests.Flags().String("influxdb-pass", "", "InfluxDB password")
-	cmdRunTests.Flags().String("influxdb-tls-ca", "", "Path to the CA")
-	cmdRunTests.Flags().String("influxdb-tls-cert", "", "Path to the client certificate")
-	cmdRunTests.Flags().String("influxdb-tls-cert-key", "", "Path to the client certificate's key")
-	cmdRunTests.Flags().String("influxdb-tls-cert-key-pass", "", "Passkey for the client certificate's key")
 
 	rootCmd.AddCommand(
 		versionCmd,

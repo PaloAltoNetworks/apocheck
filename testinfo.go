@@ -9,7 +9,6 @@ import (
 	"go.aporeto.io/elemental"
 	"go.aporeto.io/gaia"
 	"go.aporeto.io/manipulate"
-	"go.aporeto.io/underwater/platform"
 )
 
 // A TestInfo contains various information about a test.
@@ -17,7 +16,6 @@ type TestInfo struct {
 	data              interface{}
 	header            io.Writer
 	iteration         int
-	platformInfo      *platform.Info
 	privateAPI        string
 	privateTLSConfig  *tls.Config
 	publicAPI         string

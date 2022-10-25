@@ -15,8 +15,6 @@ import (
 	"go.aporeto.io/elemental"
 	"go.aporeto.io/manipulate"
 	"go.aporeto.io/manipulate/maniphttp"
-	"go.aporeto.io/underwater/ibatcher"
-	"go.aporeto.io/underwater/platform"
 )
 
 type testRun struct {
@@ -39,8 +37,6 @@ type testResult struct {
 type testRunner struct {
 	concurrent        int
 	encoding          elemental.EncodingType
-	info              *platform.Info
-	metricsBatcher    ibatcher.Batcher
 	buildID           string
 	privateAPI        string
 	privateTLSConfig  *tls.Config
@@ -78,7 +74,6 @@ func newTestRunner(
 	skipTeardown bool,
 	stopOnFailure bool,
 	encoding elemental.EncodingType,
-	metricsBatcher ibatcher.Batcher,
 ) *testRunner {
 
 	publicTLSConfig := &tls.Config{
@@ -138,7 +133,6 @@ func newTestRunner(
 		timeout:           timeout,
 		verbose:           verbose,
 		encoding:          encoding,
-		metricsBatcher:    metricsBatcher,
 		buildID:           buildID,
 	}
 }
@@ -193,7 +187,6 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, roo
 			subTestInfo := TestInfo{
 				data:              data,
 				iteration:         iteration,
-				platformInfo:      r.info,
 				privateAPI:        r.privateAPI,
 				privateTLSConfig:  r.privateTLSConfig,
 				publicAPI:         r.publicAPI,
@@ -281,7 +274,7 @@ L:
 						err = res.err
 
 						if r.stopOnFailure {
-							appendResults(run, results, r.verbose, r.metricsBatcher)
+							appendResults(run, results, r.verbose)
 							fmt.Println(hdr.String())
 							fmt.Println(buf.String())
 							close(stop)
@@ -291,7 +284,7 @@ L:
 					}
 
 					if len(results) == r.stress {
-						appendResults(run, results, r.verbose, r.metricsBatcher)
+						appendResults(run, results, r.verbose)
 						break L2
 					}
 				case <-ctx.Done():
@@ -311,7 +304,6 @@ L:
 			test:    test,
 			verbose: r.verbose,
 			testInfo: TestInfo{
-				platformInfo:      r.info,
 				privateAPI:        r.privateAPI,
 				privateTLSConfig:  r.privateTLSConfig,
 				publicAPI:         r.publicAPI,
