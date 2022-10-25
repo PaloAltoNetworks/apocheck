@@ -8,8 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"go.aporeto.io/underwater/ibatcher"
-
 	"github.com/buger/goterm"
 	wordwrap "github.com/mitchellh/go-wordwrap"
 )
@@ -101,25 +99,7 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 	return failed
 }
 
-func appendResults(run testRun, results []testResult, showOnSuccess bool, batcher ibatcher.Batcher) {
-
-	if batcher != nil {
-		batcher.Push(
-			statsReport{
-				ID:       run.test.id,
-				BuildID:  run.buildID,
-				Suite:    run.test.SuiteName,
-				Name:     run.test.Name,
-				Duration: int(averageTime(results)),
-				Value: func() int {
-					if hasErrors(results) {
-						return 0
-					}
-					return 1
-				}(),
-			}.point("apocheck_integ_tests"),
-		)
-	}
+func appendResults(run testRun, results []testResult, showOnSuccess bool) {
 
 	printLock.Lock()
 	defer printLock.Unlock()
