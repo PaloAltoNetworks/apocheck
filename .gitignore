@@ -1,3 +1,2 @@
-example/example
-vendor
-Gopkg.lock
+*.cov
+coverage.xml

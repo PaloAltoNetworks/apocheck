@@ -5,12 +5,12 @@ go 1.13
 // Aporeto
 require (
 	github.com/aporeto-inc/influxdb1-client v0.0.0-20191112013944-16d78ec0c871
-	go.aporeto.io/elemental v1.100.1-0.20220524204820-ddfa01dc1c96
-	go.aporeto.io/gaia v1.94.1-0.20220608215959-187fca4731d5
-	go.aporeto.io/manipulate v1.121.1-0.20220608215952-c9a469026c2c
-	go.aporeto.io/midgard-lib v1.69.2-0.20220608220115-c0be8d44a662
-	go.aporeto.io/tg v1.34.1-0.20220107235943-7d2aaa0dc6f5
-	go.aporeto.io/underwater v1.238.2-0.20220608220104-c06969dcf8af
+	go.aporeto.io/elemental v1.100.1-0.20221006005537-c60097ab6232
+	go.aporeto.io/gaia v1.94.1-0.20221024231114-473be9b8d8f4
+	go.aporeto.io/manipulate v1.121.1-0.20220818183431-0fbde75e6806
+	go.aporeto.io/midgard-lib v1.69.2-0.20220818183438-d0ef560749c8
+	go.aporeto.io/tg v1.34.1-0.20220818183816-cb2499f8b312
+	go.aporeto.io/underwater v1.249.0
 )
 
 require (
@@ -18,7 +18,7 @@ require (
 	github.com/gofrs/uuid v3.3.0+incompatible
 	github.com/mitchellh/go-wordwrap v1.0.0
 	github.com/smartystreets/goconvey v1.7.2
-	github.com/spf13/cobra v1.2.1
-	github.com/spf13/viper v1.8.1
+	github.com/spf13/cobra v1.5.0
+	github.com/spf13/viper v1.12.0
 	go.uber.org/zap v1.19.0
 )
