@@ -50,7 +50,7 @@ type testRunner struct {
 	status            map[string]testRun
 	stopOnFailure     bool
 	stress            int
-	suite             testSuite
+	suite             *suiteInfo
 	teardowns         chan TearDownFunction
 	timeout           time.Duration
 	verbose           bool
@@ -66,7 +66,7 @@ func newTestRunner(
 	publicCAPool *x509.CertPool,
 	token string,
 	namespace string,
-	suite testSuite,
+	suite *suiteInfo,
 	timeout time.Duration,
 	concurrent int,
 	stress int,
@@ -198,12 +198,13 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, roo
 				timeout:           r.timeout,
 				writer:            buf,
 				encoding:          r.encoding,
+				suite:             r.suite,
 			}
 
 			if t.test.Setup != nil {
 				data, td, err = t.test.Setup(t.ctx, subTestInfo)
 				if err != nil {
-					printSetupError(t, nil, err)
+					printSetupError(t.test.id, t.test.SuiteName, t.test.Name, nil, err)
 					ti.err = err
 					return
 				}
@@ -236,7 +237,7 @@ func (r *testRunner) execute(ctx context.Context, rootManipulator manipulate.Man
 	var err error
 
 L:
-	for _, test := range r.suite.sorted() {
+	for _, test := range r.suite.tests.sorted() {
 
 		wg.Add(1)
 
@@ -313,6 +314,7 @@ L:
 				timeOfLastStep:    time.Now(),
 				timeout:           r.timeout,
 				encoding:          r.encoding,
+				suite:             r.suite,
 			},
 		})
 	}
@@ -330,9 +332,41 @@ L:
 	return err
 }
 
-func (r *testRunner) Run(ctx context.Context, suite testSuite) error {
+func (r *testRunner) Run(ctx context.Context, suite *suiteInfo) error {
 
-	r.teardowns = make(chan TearDownFunction, len(suite))
+	if suite.Setup != nil {
+
+		buf := &bytes.Buffer{}
+
+		suite.writer = buf
+
+		data, td, err := suite.Setup(ctx, suite)
+		if err != nil {
+			printSetupError("Suite", suite.Name, "", nil, err)
+			return err
+		}
+		suite.data = data
+
+		if r.verbose && buf.String() != "" {
+			fmt.Println(buf.String())
+			buf = &bytes.Buffer{}
+			suite.writer = buf
+		}
+
+		defer func() {
+			if r.skipTeardown {
+				suite.Write([]byte("Teardown skipped.")) //nolint
+			} else if td != nil {
+				td()
+			}
+
+			if r.verbose && buf.String() != "" {
+				fmt.Println(buf.String())
+			}
+		}()
+	}
+
+	r.teardowns = make(chan TearDownFunction, len(suite.tests))
 	if err := r.execute(ctx, r.rootManipulator, r.publicManipulator); err != nil {
 		return fmt.Errorf("failed test(s). please check logs")
 	}

@@ -53,8 +53,8 @@ func NewCommand(
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			suite := filterSuite()
-			return listTests(suite)
+			suites := filterSuites()
+			return listTests(suites)
 		},
 	}
 
@@ -102,7 +102,7 @@ func NewCommand(
 			ctx, cancel := context.WithTimeout(context.Background(), viper.GetDuration("limit"))
 			defer cancel()
 
-			suite := filterSuite()
+			suites := filterSuites()
 
 			var encoding elemental.EncodingType
 			switch viper.GetString("encoding") {
@@ -114,27 +114,33 @@ func NewCommand(
 				zap.L().Fatal("Unknown encoding type", zap.String("encoding", viper.GetString("encoding")))
 			}
 
-			return newTestRunner(
-				ctx,
-				viper.GetString("build-id"),
-				viper.GetString("api-private"),
-				caPoolPrivate,
-				systemCert,
+			for _, suite := range suites {
+				err := newTestRunner(
+					ctx,
+					viper.GetString("build-id"),
+					viper.GetString("api-private"),
+					caPoolPrivate,
+					systemCert,
 
-				viper.GetString("api-public"),
-				caPoolPublic,
-				viper.GetString("token"),
-				viper.GetString("namespace"),
+					viper.GetString("api-public"),
+					caPoolPublic,
+					viper.GetString("token"),
+					viper.GetString("namespace"),
 
-				suite,
-				viper.GetDuration("limit"),
-				viper.GetInt("concurrent"),
-				viper.GetInt("stress"),
-				viper.GetBool("verbose"),
-				viper.GetBool("skip-teardown"),
-				viper.GetBool("stop-on-failure"),
-				encoding,
-			).Run(ctx, suite)
+					suite,
+					viper.GetDuration("limit"),
+					viper.GetInt("concurrent"),
+					viper.GetInt("stress"),
+					viper.GetBool("verbose"),
+					viper.GetBool("skip-teardown"),
+					viper.GetBool("stop-on-failure"),
+					encoding,
+				).Run(ctx, suite)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
 		},
 	}
 
@@ -161,6 +167,9 @@ func NewCommand(
 	cmdRunTests.Flags().String("cacert-public", defaultCaCertPublic, "Path to the public api ca certificate")
 	cmdRunTests.Flags().String("token", "", "Access Token")
 	cmdRunTests.Flags().String("namespace", "/", "Account Name")
+
+	// Parameters to configure suite behaviors
+	cmdRunTests.Flags().StringSliceP("suite", "Z", nil, "Only run suites specified")
 
 	// Parameters to configure test behaviors
 	cmdRunTests.Flags().String("encoding", "msgpack", "Default encoding to use to talk to the API")
@@ -229,17 +238,43 @@ func setupCerts(certPath string, keyPath string, keyPass string) (*tls.Certifica
 	return &cert, nil
 }
 
-// filterSuite filters the suite based on ids and/or tags
-func filterSuite() testSuite {
-	s := mainTestSuite
+// runSuite returns true if we should consider the suite for running
+func runSuite(s *suiteInfo, names []string) bool {
+	if len(names) == 0 {
+		return true
+	}
+	for _, name := range names {
+		if name == s.Name {
+			return true
+		}
+	}
+	return false
+}
 
-	ids := viper.GetStringSlice("id")
-	if len(ids) > 0 {
-		s = mainTestSuite.testsWithIDs(viper.GetBool("verbose"), ids)
-	} else {
-		tags := viper.GetStringSlice("tag")
-		if len(tags) > 0 {
-			s = mainTestSuite.testsWithArgs(viper.GetBool("verbose"), viper.GetBool("match-all"), tags)
+// filterSuites filters the suite based on ids and/or tags
+func filterSuites() []*suiteInfo {
+	s := []*suiteInfo{}
+
+	names := viper.GetStringSlice("suite")
+	for _, suite := range mainSuites.sorted() {
+
+		// Filter Suites
+		if !runSuite(suite, names) {
+			continue
+		}
+
+		// Filter Tests in a suite
+		ids := viper.GetStringSlice("id")
+		if len(ids) > 0 {
+			suite = suite.testsWithIDs(viper.GetBool("verbose"), ids)
+		} else {
+			tags := viper.GetStringSlice("tag")
+			if len(tags) > 0 {
+				suite = suite.testsWithArgs(viper.GetBool("verbose"), viper.GetBool("match-all"), tags)
+			}
+		}
+		if len(suite.tests) > 0 {
+			s = append(s, suite)
 		}
 	}
 	return s

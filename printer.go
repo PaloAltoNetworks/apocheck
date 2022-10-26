@@ -14,7 +14,7 @@ import (
 
 var printLock = &sync.Mutex{}
 
-func printSetupError(curTest testRun, recovery interface{}, err error) {
+func printSetupError(id, suite, name string, recovery interface{}, err error) {
 
 	printLock.Lock()
 	defer printLock.Unlock()
@@ -24,8 +24,8 @@ func printSetupError(curTest testRun, recovery interface{}, err error) {
 		goterm.Bold(
 			goterm.Color(
 				fmt.Sprintf("%s FAIL %s",
-					curTest.test.id,
-					curTest.test.Name,
+					id,
+					name,
 				),
 				goterm.YELLOW,
 			),
@@ -64,9 +64,10 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 
 	if !failed && !showOnSuccess {
 		output := goterm.Color(
-			fmt.Sprintf("%s (%s): %s %s",
+			fmt.Sprintf("%s (%s): %s %s/%s",
 				resultString,
 				currTest.test.id,
+				currTest.test.SuiteName,
 				currTest.test.Name,
 				goterm.Color(fmt.Sprintf("it: %d, avg: %s, suite: %s", len(results), averageTime(results), sname), goterm.BLUE),
 			),
@@ -84,9 +85,10 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 	output := fmt.Sprintf("%s\n%s",
 		goterm.Bold(
 			goterm.Color(
-				fmt.Sprintf("ID: %s : %s : %s",
+				fmt.Sprintf("ID: %s : %s : %s/%s",
 					currTest.test.id,
 					resultString,
+					currTest.test.SuiteName,
 					currTest.test.Name,
 				),
 				color),

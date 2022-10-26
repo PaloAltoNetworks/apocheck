@@ -4,6 +4,9 @@ import (
 	"context"
 )
 
+// If SetupSuiteFunction returns an error, the entire suite of test is stopped.
+type SetupSuiteFunction func(context.Context, SuiteInfo) (interface{}, TearDownFunction, error)
+
 // A TestFunction is the type of a function that is run by a Test.
 type TestFunction func(context.Context, TestInfo) error
 
