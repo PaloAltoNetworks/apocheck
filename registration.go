@@ -36,6 +36,9 @@ func RegisterTest(t Test) {
 	}
 	t.id = fmt.Sprintf("%x", h.Sum32())
 
+	if _, ok := mainTestSuite[t.Name]; ok {
+		panic("a test of the same name was previously registered: " + t.Name)
+	}
 	mainTestSuite[t.Name] = t
 }
 
