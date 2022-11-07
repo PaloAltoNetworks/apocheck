@@ -2,44 +2,46 @@ package apocheck
 
 import (
 	"fmt"
-	"hash/fnv"
 )
 
-var mainTestSuite testSuite
+const defaultSuiteName = "_default"
+
+var mainSuites suitesMap
 
 // RegisterTest register a test in the main suite.
 func RegisterTest(t Test) {
-
-	if t.Name == "" {
-		panic("test is missing name")
-	}
-
-	if t.Description == "" {
-		panic("test is missing description")
-	}
-
-	if t.Author == "" {
-		panic("test is missing author")
-	}
-
-	if t.Function == nil {
-		panic("test is missing function")
-	}
-
-	if len(t.Tags) == 0 {
-		panic("test is missing tags")
-	}
-
-	h := fnv.New32()
-	if _, err := h.Write([]byte(t.Name + t.Description + t.Author)); err != nil {
-		panic(err)
-	}
-	t.id = fmt.Sprintf("%x", h.Sum32())
-
-	if _, ok := mainTestSuite[t.Name]; ok {
-		panic("a test of the same name was previously registered: " + t.Name)
-	}
-	mainTestSuite[t.Name] = t
+	mainSuites[defaultSuiteName].RegisterTest(t)
 }
 
-func init() { mainTestSuite = testSuite{} }
+// RegisterSuite registers a test suite.
+func RegisterSuite(s Suite) SuiteInfo {
+
+	if s.Name == "" {
+		panic("suite is missing name")
+	}
+
+	if s.Description == "" {
+		panic("suite is missing description")
+	}
+
+	if _, ok := mainSuites[s.Name]; ok {
+		panic(fmt.Sprintf("suite already registered with name %s", s.Name))
+	}
+
+	si := &suiteInfo{
+		Name:        s.Name,
+		Description: s.Description,
+		Setup:       s.Setup,
+		tests:       testsMap{},
+	}
+	mainSuites[si.Name] = si
+	return si
+}
+
+func init() {
+	mainSuites = map[string]*suiteInfo{}
+	RegisterSuite(Suite{
+		Name:        defaultSuiteName,
+		Description: defaultSuiteName,
+	})
+}

@@ -27,6 +27,7 @@ type TestInfo struct {
 	timeout           time.Duration
 	writer            io.Writer
 	encoding          elemental.EncodingType
+	suite             *suiteInfo
 }
 
 // Account returns a gaia Account object that can be used for the test.
@@ -58,6 +59,11 @@ func (t TestInfo) AccountNamespace() string {
 // SetupInfo returns the eventual object stored by the Setup function.
 func (t TestInfo) SetupInfo() interface{} {
 	return t.data
+}
+
+// SuiteSetupInfo returns the eventual object stored by the Suite Setup function.
+func (t TestInfo) SuiteSetupInfo() interface{} {
+	return t.suite.data
 }
 
 // Iteration returns the test iteration number.

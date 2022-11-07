@@ -88,10 +88,10 @@ func (t Test) hasTag(tag string) bool {
 }
 
 func (t Test) String() string {
-	return fmt.Sprintf(`id         : %s
-name       : %s
-desc       : %s
-author     : %s
-categories : %s
+	return fmt.Sprintf(`  id         : %s
+  name       : %s
+  desc       : %s
+  author     : %s
+  categories : %s
 `, t.id, t.Name, t.Description, t.Author, strings.Join(t.Tags, ", "))
 }

@@ -1,11 +1,9 @@
 package apocheck
 
-import "fmt"
+func listTests(suites []*suiteInfo) error {
 
-func listTests(suite testSuite) error {
-
-	for _, test := range suite.sorted() {
-		fmt.Printf("%s\n", test)
+	for _, suite := range suites {
+		suite.listTests()
 	}
 
 	return nil
