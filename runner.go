@@ -3,8 +3,6 @@ package apocheck
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io"
 	"runtime/debug"
@@ -12,9 +10,6 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	"go.aporeto.io/elemental"
-	"go.aporeto.io/manipulate"
-	"go.aporeto.io/manipulate/maniphttp"
 )
 
 type testRun struct {
@@ -35,37 +30,24 @@ type testResult struct {
 }
 
 type testRunner struct {
-	concurrent        int
-	encoding          elemental.EncodingType
-	buildID           string
-	privateAPI        string
-	privateTLSConfig  *tls.Config
-	publicAPI         string
-	publicManipulator manipulate.Manipulator
-	publicTLSConfig   *tls.Config
-	resultsChan       chan testRun
-	rootManipulator   manipulate.Manipulator
-	setupErrs         chan error
-	skipTeardown      bool
-	status            map[string]testRun
-	stopOnFailure     bool
-	stress            int
-	suite             *suiteInfo
-	teardowns         chan TearDownFunction
-	timeout           time.Duration
-	verbose           bool
+	concurrent    int
+	buildID       string
+	resultsChan   chan testRun
+	setupErrs     chan error
+	skipTeardown  bool
+	status        map[string]testRun
+	stopOnFailure bool
+	stress        int
+	suite         *suiteInfo
+	teardowns     chan TearDownFunction
+	timeout       time.Duration
+	verbose       bool
+	Aporeto
 }
 
 func newTestRunner(
 	ctx context.Context,
 	buildID string,
-	privateAPI string,
-	privateCAPool *x509.CertPool,
-	systemCert *tls.Certificate,
-	publicAPI string,
-	publicCAPool *x509.CertPool,
-	token string,
-	namespace string,
 	suite *suiteInfo,
 	timeout time.Duration,
 	concurrent int,
@@ -73,71 +55,26 @@ func newTestRunner(
 	verbose bool,
 	skipTeardown bool,
 	stopOnFailure bool,
-	encoding elemental.EncodingType,
+	aporeto Aporeto,
 ) *testRunner {
 
-	publicTLSConfig := &tls.Config{
-		RootCAs:            publicCAPool,
-		InsecureSkipVerify: true, // nolint
-	}
-
-	privateTLSConfig := &tls.Config{}
-	if systemCert != nil && privateCAPool != nil {
-		privateTLSConfig = &tls.Config{
-			RootCAs:            privateCAPool,
-			Certificates:       []tls.Certificate{*systemCert},
-			InsecureSkipVerify: true, // nolint
-		}
-	}
-
-	// Public Manipulator
-	var publicManipulator manipulate.Manipulator
-	if token != "" && publicAPI != "" {
-		publicManipulator, _ = maniphttp.New(
-			ctx,
-			publicAPI,
-			maniphttp.OptionToken(token),
-			maniphttp.OptionNamespace(namespace),
-			maniphttp.OptionEncoding(encoding),
-			maniphttp.OptionTLSConfig(publicTLSConfig),
-		)
-	}
-
-	// private manipulator
-	var rootManipulator manipulate.Manipulator
-	if systemCert != nil && privateAPI != "" {
-		rootManipulator, _ = maniphttp.New(
-			ctx,
-			privateAPI,
-			maniphttp.OptionNamespace(namespace),
-			maniphttp.OptionTLSConfig(privateTLSConfig),
-			maniphttp.OptionEncoding(encoding),
-		)
-	}
-
 	return &testRunner{
-		concurrent:        concurrent,
-		privateAPI:        privateAPI,
-		privateTLSConfig:  privateTLSConfig,
-		publicAPI:         publicAPI,
-		publicManipulator: publicManipulator,
-		publicTLSConfig:   publicTLSConfig,
-		resultsChan:       make(chan testRun, concurrent*stress),
-		rootManipulator:   rootManipulator,
-		setupErrs:         make(chan error),
-		skipTeardown:      skipTeardown,
-		status:            map[string]testRun{},
-		stopOnFailure:     stopOnFailure,
-		stress:            stress,
-		suite:             suite,
-		timeout:           timeout,
-		verbose:           verbose,
-		encoding:          encoding,
-		buildID:           buildID,
+		concurrent:    concurrent,
+		resultsChan:   make(chan testRun, concurrent*stress),
+		setupErrs:     make(chan error),
+		skipTeardown:  skipTeardown,
+		status:        map[string]testRun{},
+		stopOnFailure: stopOnFailure,
+		stress:        stress,
+		suite:         suite,
+		timeout:       timeout,
+		verbose:       verbose,
+		buildID:       buildID,
+		Aporeto:       aporeto,
 	}
 }
 
-func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, rootManipulator manipulate.Manipulator, publicManipulator manipulate.Manipulator, results chan testResult) {
+func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, results chan testResult) {
 
 	sem := make(chan struct{}, r.concurrent)
 
@@ -185,21 +122,16 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, roo
 			}()
 
 			subTestInfo := TestInfo{
-				data:              data,
-				iteration:         iteration,
-				privateAPI:        r.privateAPI,
-				privateTLSConfig:  r.privateTLSConfig,
-				publicAPI:         r.publicAPI,
-				publicManipulator: publicManipulator,
-				publicTLSConfig:   r.publicTLSConfig,
-				rootManipulator:   rootManipulator,
-				testID:            uuid.Must(uuid.NewV4()).String(),
-				timeOfLastStep:    t.testInfo.timeOfLastStep,
-				timeout:           r.timeout,
-				writer:            buf,
-				encoding:          r.encoding,
-				suite:             r.suite,
+				data:           data,
+				iteration:      iteration,
+				testID:         uuid.Must(uuid.NewV4()).String(),
+				timeOfLastStep: t.testInfo.timeOfLastStep,
+				timeout:        r.timeout,
+				writer:         buf,
+				suite:          r.suite,
+				Aporeto:        r.Aporeto,
 			}
+			subTestInfo.Aporeto.testID = subTestInfo.testID
 
 			if t.test.Setup != nil {
 				data, td, err = t.test.Setup(t.ctx, subTestInfo)
@@ -227,7 +159,7 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, roo
 	}
 }
 
-func (r *testRunner) execute(ctx context.Context, rootManipulator manipulate.Manipulator, publicManipulator manipulate.Manipulator) error {
+func (r *testRunner) execute(ctx context.Context) error {
 
 	sem := make(chan struct{}, r.concurrent)
 	done := make(chan struct{})
@@ -261,7 +193,7 @@ L:
 
 			resultsCh := make(chan testResult)
 
-			go r.executeIteration(ctx, run, rootManipulator, publicManipulator, resultsCh)
+			go r.executeIteration(ctx, run, resultsCh)
 
 			var results []testResult
 
@@ -305,16 +237,10 @@ L:
 			test:    test,
 			verbose: r.verbose,
 			testInfo: TestInfo{
-				privateAPI:        r.privateAPI,
-				privateTLSConfig:  r.privateTLSConfig,
-				publicAPI:         r.publicAPI,
-				publicManipulator: publicManipulator,
-				publicTLSConfig:   r.publicTLSConfig,
-				rootManipulator:   rootManipulator,
-				timeOfLastStep:    time.Now(),
-				timeout:           r.timeout,
-				encoding:          r.encoding,
-				suite:             r.suite,
+				timeOfLastStep: time.Now(),
+				timeout:        r.timeout,
+				suite:          r.suite,
+				Aporeto:        r.Aporeto,
 			},
 		})
 	}
@@ -367,7 +293,7 @@ func (r *testRunner) Run(ctx context.Context, suite *suiteInfo) error {
 	}
 
 	r.teardowns = make(chan TearDownFunction, len(suite.tests))
-	if err := r.execute(ctx, r.rootManipulator, r.publicManipulator); err != nil {
+	if err := r.execute(ctx); err != nil {
 		return fmt.Errorf("failed test(s). please check logs")
 	}
 

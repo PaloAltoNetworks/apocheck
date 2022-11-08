@@ -1,59 +1,21 @@
 package apocheck
 
 import (
-	"crypto/tls"
-	"fmt"
 	"io"
 	"time"
-
-	"go.aporeto.io/elemental"
-	"go.aporeto.io/gaia"
-	"go.aporeto.io/manipulate"
 )
 
 // A TestInfo contains various information about a test.
 type TestInfo struct {
-	data              interface{}
-	header            io.Writer
-	iteration         int
-	privateAPI        string
-	privateTLSConfig  *tls.Config
-	publicAPI         string
-	publicManipulator manipulate.Manipulator
-	publicTLSConfig   *tls.Config
-	rootManipulator   manipulate.Manipulator
-	testID            string
-	timeOfLastStep    time.Time
-	timeout           time.Duration
-	writer            io.Writer
-	encoding          elemental.EncodingType
-	suite             *suiteInfo
-}
-
-// Account returns a gaia Account object that can be used for the test.
-func (t TestInfo) Account(password string) *gaia.Account {
-
-	// nolint
-	return &gaia.Account{
-		Name:     t.AccountName(),
-		Password: password,
-		Email:    fmt.Sprintf("user@%s.com", t.AccountName()),
-	}
-}
-
-// TestNamespace returns a unique namespace that can be used by this test.
-func (t TestInfo) TestNamespace(iteration int) string {
-	return fmt.Sprintf("/%s/%s", t.AccountName(), t.testID)
-}
-
-// AccountName returns a unique account name that can be used by this test.
-func (t TestInfo) AccountName() string {
-	return fmt.Sprintf("account-%s", t.testID)
-}
-
-// AccountNamespace returns the account namespace that can be used by this test.
-func (t TestInfo) AccountNamespace() string {
-	return fmt.Sprintf("/account-%s", t.testID)
+	data           interface{}
+	header         io.Writer
+	iteration      int
+	testID         string
+	timeOfLastStep time.Time
+	timeout        time.Duration
+	writer         io.Writer
+	suite          *suiteInfo
+	Aporeto
 }
 
 // SetupInfo returns the eventual object stored by the Setup function.
@@ -74,36 +36,6 @@ func (t TestInfo) Iteration() int {
 // TestID returns the test ID
 func (t TestInfo) TestID() string {
 	return t.testID
-}
-
-// RootManipulator returns the root manipulator if any.
-func (t TestInfo) RootManipulator() manipulate.Manipulator {
-	return t.rootManipulator
-}
-
-// PublicManipulator returns the public manipulator if any.
-func (t TestInfo) PublicManipulator() manipulate.Manipulator {
-	return t.publicManipulator
-}
-
-// PublicAPI returns the public API endpoint.
-func (t TestInfo) PublicAPI() string {
-	return t.publicAPI
-}
-
-// PrivateAPI returns the private API endpoint.
-func (t TestInfo) PrivateAPI() string {
-	return t.privateAPI
-}
-
-// PublicTLSConfig returns the public TLS config.
-func (t TestInfo) PublicTLSConfig() *tls.Config {
-	return t.publicTLSConfig
-}
-
-// PrivateTLSConfig returns the public TLS config.
-func (t TestInfo) PrivateTLSConfig() *tls.Config {
-	return t.privateTLSConfig
 }
 
 // WriteHeader performs a write at the header

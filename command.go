@@ -11,9 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"go.aporeto.io/elemental"
 	"go.aporeto.io/tg/tglib"
-	"go.uber.org/zap"
 )
 
 // NewCommand generates a new CLI for regolith
@@ -73,60 +71,20 @@ func NewCommand(
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			// TODO: add argument check.
-
-			var caPoolPublic, caPoolPrivate *x509.CertPool
-			var systemCert *tls.Certificate
-			var err error
-
-			if path := viper.GetString("cacert-public"); path != "" {
-				caPoolPublic, err = setupPublicCA(path)
-				if err != nil {
-					return fmt.Errorf("unable to load public ca from path '%s': %s", path, err)
-				}
-			}
-
-			if path := viper.GetString("cacert-private"); path != "" {
-				caPoolPrivate, err = setupPrivateCA(path)
-				if err != nil {
-					return fmt.Errorf("unable to load private ca from path '%s': %s", path, err)
-				}
-			}
-
-			if certPath, keyPath := viper.GetString("cert"), viper.GetString("key"); certPath != "" && keyPath != "" {
-				systemCert, err = setupCerts(certPath, keyPath, viper.GetString("key-pass"))
-				if err != nil {
-					return err
-				}
-			}
-
 			ctx, cancel := context.WithTimeout(context.Background(), viper.GetDuration("limit"))
 			defer cancel()
 
-			suites := filterSuites()
-
-			var encoding elemental.EncodingType
-			switch viper.GetString("encoding") {
-			case "json":
-				encoding = elemental.EncodingTypeJSON
-			case "msgpack":
-				encoding = elemental.EncodingTypeMSGPACK
-			default:
-				zap.L().Fatal("Unknown encoding type", zap.String("encoding", viper.GetString("encoding")))
+			a, err := newAporeto(ctx)
+			if err != nil {
+				return err
 			}
+
+			suites := filterSuites()
 
 			for _, suite := range suites {
 				err := newTestRunner(
 					ctx,
 					viper.GetString("build-id"),
-					viper.GetString("api-private"),
-					caPoolPrivate,
-					systemCert,
-
-					viper.GetString("api-public"),
-					caPoolPublic,
-					viper.GetString("token"),
-					viper.GetString("namespace"),
-
 					suite,
 					viper.GetDuration("limit"),
 					viper.GetInt("concurrent"),
@@ -134,7 +92,7 @@ func NewCommand(
 					viper.GetBool("verbose"),
 					viper.GetBool("skip-teardown"),
 					viper.GetBool("stop-on-failure"),
-					encoding,
+					a,
 				).Run(ctx, suite)
 				if err != nil {
 					return err
