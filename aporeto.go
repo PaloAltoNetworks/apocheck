@@ -30,7 +30,7 @@ type Aporeto struct {
 }
 
 // New creates a new aporeto object that can be stashed into barrier.
-func New(ctx context.Context) (a Aporeto, err error) {
+func New(ctx context.Context) (a *Aporeto, err error) {
 
 	var caPoolPublic, caPoolPrivate *x509.CertPool
 	var systemCert *tls.Certificate
@@ -38,14 +38,14 @@ func New(ctx context.Context) (a Aporeto, err error) {
 	if path := viper.GetString("cacert-public"); path != "" {
 		caPoolPublic, err = setupPublicCA(path)
 		if err != nil {
-			return a, fmt.Errorf("unable to load public ca from path '%s': %s", path, err)
+			return nil, fmt.Errorf("unable to load public ca from path '%s': %s", path, err)
 		}
 	}
 
 	if path := viper.GetString("cacert-private"); path != "" {
 		caPoolPrivate, err = setupPrivateCA(path)
 		if err != nil {
-			return a, fmt.Errorf("unable to load private ca from path '%s': %s", path, err)
+			return nil, fmt.Errorf("unable to load private ca from path '%s': %s", path, err)
 		}
 	}
 
@@ -63,7 +63,7 @@ func New(ctx context.Context) (a Aporeto, err error) {
 	case "msgpack":
 		encoding = elemental.EncodingTypeMSGPACK
 	default:
-		return a, fmt.Errorf("invalid encoding" + viper.GetString("encoding"))
+		return nil, fmt.Errorf("invalid encoding" + viper.GetString("encoding"))
 	}
 
 	// Token and Namespace
@@ -111,7 +111,7 @@ func New(ctx context.Context) (a Aporeto, err error) {
 		)
 	}
 
-	return Aporeto{
+	return &Aporeto{
 		// Aporeto Specific
 		encoding:          encoding,
 		privateAPI:        privateAPI,
