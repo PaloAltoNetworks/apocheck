@@ -126,9 +126,9 @@ func CreateNamespace(ctx context.Context, m manipulate.Manipulator, name string,
 	return ns, manipulate.NewContext(ctx, manipulate.ContextOptionNamespace(ns.Name)), nil
 }
 
-// Aporeto Specific Code:
+// aporeto Specific Code:
 
-type Aporeto struct {
+type aporeto struct {
 	encoding          elemental.EncodingType
 	privateAPI        string
 	privateTLSConfig  *tls.Config
@@ -139,7 +139,7 @@ type Aporeto struct {
 	testID            string
 }
 
-func newAporeto(ctx context.Context) (a Aporeto, err error) {
+func newAporeto(ctx context.Context) (a aporeto, err error) {
 
 	var caPoolPublic, caPoolPrivate *x509.CertPool
 	var systemCert *tls.Certificate
@@ -172,7 +172,7 @@ func newAporeto(ctx context.Context) (a Aporeto, err error) {
 	case "msgpack":
 		encoding = elemental.EncodingTypeMSGPACK
 	default:
-		return a, fmt.Errorf("invalid encoding", viper.GetString("encoding"))
+		return a, fmt.Errorf("invalid encoding" + viper.GetString("encoding"))
 	}
 
 	// Token and Namespace
@@ -220,7 +220,7 @@ func newAporeto(ctx context.Context) (a Aporeto, err error) {
 		)
 	}
 
-	return Aporeto{
+	return aporeto{
 		// Aporeto Specific
 		encoding:          encoding,
 		privateAPI:        privateAPI,
@@ -233,37 +233,37 @@ func newAporeto(ctx context.Context) (a Aporeto, err error) {
 }
 
 // RootManipulator returns the root manipulator if any.
-func (a *Aporeto) RootManipulator() manipulate.Manipulator {
+func (a *aporeto) RootManipulator() manipulate.Manipulator {
 	return a.rootManipulator
 }
 
 // PublicManipulator returns the public manipulator if any.
-func (a *Aporeto) PublicManipulator() manipulate.Manipulator {
+func (a *aporeto) PublicManipulator() manipulate.Manipulator {
 	return a.publicManipulator
 }
 
 // PublicAPI returns the public API endpoina.
-func (a *Aporeto) PublicAPI() string {
+func (a *aporeto) PublicAPI() string {
 	return a.publicAPI
 }
 
 // PrivateAPI returns the private API endpoina.
-func (a *Aporeto) PrivateAPI() string {
+func (a *aporeto) PrivateAPI() string {
 	return a.privateAPI
 }
 
 // PublicTLSConfig returns the public TLS config.
-func (a *Aporeto) PublicTLSConfig() *tls.Config {
+func (a *aporeto) PublicTLSConfig() *tls.Config {
 	return a.publicTLSConfig
 }
 
 // PrivateTLSConfig returns the public TLS config.
-func (a *Aporeto) PrivateTLSConfig() *tls.Config {
+func (a *aporeto) PrivateTLSConfig() *tls.Config {
 	return a.privateTLSConfig
 }
 
 // Account returns a gaia Account object that can be used for the test.
-func (a *Aporeto) Account(password string) *gaia.Account {
+func (a *aporeto) Account(password string) *gaia.Account {
 
 	// nolint
 	return &gaia.Account{
@@ -274,16 +274,16 @@ func (a *Aporeto) Account(password string) *gaia.Account {
 }
 
 // TestNamespace returns a unique namespace that can be used by this test.
-func (a *Aporeto) TestNamespace(iteration int) string {
+func (a *aporeto) TestNamespace(iteration int) string {
 	return fmt.Sprintf("/%s/%s", a.AccountName(), a.testID)
 }
 
 // AccountName returns a unique account name that can be used by this test.
-func (a *Aporeto) AccountName() string {
+func (a *aporeto) AccountName() string {
 	return fmt.Sprintf("account-%s", a.testID)
 }
 
 // AccountNamespace returns the account namespace that can be used by this test.
-func (a *Aporeto) AccountNamespace() string {
+func (a *aporeto) AccountNamespace() string {
 	return fmt.Sprintf("/account-%s", a.testID)
 }

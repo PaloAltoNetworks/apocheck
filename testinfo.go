@@ -15,7 +15,7 @@ type TestInfo struct {
 	timeout        time.Duration
 	writer         io.Writer
 	suite          *suiteInfo
-	Aporeto
+	aporeto
 }
 
 // SetupInfo returns the eventual object stored by the Setup function.

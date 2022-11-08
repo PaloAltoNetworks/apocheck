@@ -42,7 +42,7 @@ type testRunner struct {
 	teardowns     chan TearDownFunction
 	timeout       time.Duration
 	verbose       bool
-	Aporeto
+	aporeto
 }
 
 func newTestRunner(
@@ -55,7 +55,7 @@ func newTestRunner(
 	verbose bool,
 	skipTeardown bool,
 	stopOnFailure bool,
-	aporeto Aporeto,
+	aporeto aporeto,
 ) *testRunner {
 
 	return &testRunner{
@@ -70,7 +70,7 @@ func newTestRunner(
 		timeout:       timeout,
 		verbose:       verbose,
 		buildID:       buildID,
-		Aporeto:       aporeto,
+		aporeto:       aporeto,
 	}
 }
 
@@ -129,9 +129,8 @@ func (r *testRunner) executeIteration(ctx context.Context, currTest testRun, res
 				timeout:        r.timeout,
 				writer:         buf,
 				suite:          r.suite,
-				Aporeto:        r.Aporeto,
+				aporeto:        t.testInfo.aporeto,
 			}
-			subTestInfo.Aporeto.testID = subTestInfo.testID
 
 			if t.test.Setup != nil {
 				data, td, err = t.test.Setup(t.ctx, subTestInfo)
@@ -182,6 +181,9 @@ L:
 		}
 
 		go func(run testRun) {
+
+			// stash correct test id
+			run.testInfo.aporeto.testID = run.testInfo.testID
 
 			buf := &bytes.Buffer{}
 			hdr := &bytes.Buffer{}
@@ -240,7 +242,7 @@ L:
 				timeOfLastStep: time.Now(),
 				timeout:        r.timeout,
 				suite:          r.suite,
-				Aporeto:        r.Aporeto,
+				aporeto:        r.aporeto,
 			},
 		})
 	}
