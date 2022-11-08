@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/PaloAltoNetworks/barrier"
 	"github.com/smartystreets/goconvey/convey"
 	"go.aporeto.io/elemental"
 	"go.aporeto.io/gaia"
@@ -74,7 +75,7 @@ func AssertPushOptionNegativeTimeout(timeout time.Duration) func(cfg *assertPush
 // AssertPush asserts a push is correctly received.
 func AssertPush(
 	ctx context.Context,
-	t TestInfo,
+	t barrier.TestInfo,
 	m manipulate.Manipulator,
 	identity elemental.Identity,
 	eventType elemental.EventType,
@@ -107,7 +108,7 @@ func AssertPush(
 		cfg.subscriberOptions...,
 	)
 
-	Assert(t, fmt.Sprintf("connecting to events channel for '%s' event for '%s' should work", eventType, identity.Name), err, convey.ShouldBeNil)
+	barrier.Assert(t, fmt.Sprintf("connecting to events channel for '%s' event for '%s' should work", eventType, identity.Name), err, convey.ShouldBeNil)
 
 	return func() func() error {
 
@@ -139,7 +140,7 @@ func AssertPush(
 // AssertNoPush asserts a push is not received.
 func AssertNoPush(
 	ctx context.Context,
-	t TestInfo,
+	t barrier.TestInfo,
 	m manipulate.Manipulator,
 	identity elemental.Identity,
 	eventType elemental.EventType,
@@ -172,7 +173,7 @@ func AssertNoPush(
 		cfg.subscriberOptions...,
 	)
 
-	Assert(t, "connecting to events channel should work", err, convey.ShouldBeNil)
+	barrier.Assert(t, "connecting to events channel should work", err, convey.ShouldBeNil)
 
 	return func() func() error {
 		return func() error {

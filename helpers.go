@@ -4,10 +4,13 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
+	"github.com/PaloAltoNetworks/barrier"
 	"github.com/spf13/viper"
 	"go.aporeto.io/elemental"
 	"go.aporeto.io/gaia"
@@ -20,20 +23,30 @@ import (
 type Cleanup func() error
 
 // CreateTestAccount creates an account using the given TestInfo and returns an authenticated manipulator.
-func CreateTestAccount(ctx context.Context, m manipulate.Manipulator, t TestInfo) (manipulate.Manipulator, *gaia.Account, Cleanup, error) {
+func CreateTestAccount(ctx context.Context, m manipulate.Manipulator, t barrier.TestInfo) (manipulate.Manipulator, *gaia.Account, Cleanup, error) {
 
-	account := t.Account("Euphrates123#")
+	a, ok := t.Stash().(aporeto)
+	if !ok {
+		log.Fatalln(errors.New("invalid setup"))
+	}
+
+	account := a.Account("Euphrates123#")
 	account.AccessEnabled = true
 
 	return CreateAccount(ctx, m, account, t)
 }
 
 // CreateTestNamespace a namespace using the given TestInfo.
-func CreateTestNamespace(ctx context.Context, m manipulate.Manipulator, t TestInfo) (string, Cleanup, error) {
+func CreateTestNamespace(ctx context.Context, m manipulate.Manipulator, t barrier.TestInfo) (string, Cleanup, error) {
 
-	testns := fmt.Sprintf("/%s/%s-%d", t.AccountName(), t.testID, t.iteration)
+	a, ok := t.Stash().(aporeto)
+	if !ok {
+		log.Fatalln(errors.New("invalid setup"))
+	}
 
-	clear, err := CreateNamespaces(ctx, m, "/"+t.AccountName(), fmt.Sprintf("%s-%d", t.testID, t.iteration))
+	testns := fmt.Sprintf("/%s/%s-%d", a.AccountName(), t.TestID(), t.Iteration())
+
+	clear, err := CreateNamespaces(ctx, m, "/"+a.AccountName(), fmt.Sprintf("%s-%d", t.TestID(), t.Iteration()))
 	if err != nil {
 		return "", nil, err
 	}
@@ -42,7 +55,12 @@ func CreateTestNamespace(ctx context.Context, m manipulate.Manipulator, t TestIn
 }
 
 // CreateAccount creates the given gaia.Account and returns a manipulator for this account.
-func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.Account, t TestInfo) (manipulate.Manipulator, *gaia.Account, Cleanup, error) {
+func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.Account, t barrier.TestInfo) (manipulate.Manipulator, *gaia.Account, Cleanup, error) {
+
+	a, ok := t.Stash().(aporeto)
+	if !ok {
+		log.Fatalln(errors.New("invalid setup"))
+	}
 
 	// Keep a ref as Create qwill reset it.
 	password := account.Password
@@ -51,18 +69,18 @@ func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.
 		return nil, nil, nil, err
 	}
 
-	token, err := midgardclient.NewClientWithTLS(t.PublicAPI(), t.PublicTLSConfig()).IssueFromVince(ctx, account.Name, password, "", t.Timeout())
+	token, err := midgardclient.NewClientWithTLS(a.PublicAPI(), a.PublicTLSConfig()).IssueFromVince(ctx, account.Name, password, "", t.Timeout())
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
 	accountManipulator, _ := maniphttp.New(
 		ctx,
-		t.PublicAPI(),
+		a.PublicAPI(),
 		maniphttp.OptionToken(token),
-		maniphttp.OptionEncoding(t.encoding),
+		maniphttp.OptionEncoding(a.encoding),
 		maniphttp.OptionNamespace("/"+account.Name),
-		maniphttp.OptionTLSConfig(t.PublicTLSConfig()),
+		maniphttp.OptionTLSConfig(a.PublicTLSConfig()),
 	)
 
 	cleanUpfunc := func() error { return m.Delete(nil, account) }
