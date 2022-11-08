@@ -21,7 +21,7 @@ type Cleanup func() error
 // CreateTestAccount creates an account using the given TestInfo and returns an authenticated manipulator.
 func CreateTestAccount(ctx context.Context, m manipulate.Manipulator, t barrier.TestInfo) (manipulate.Manipulator, *gaia.Account, Cleanup, error) {
 
-	a, ok := t.Stash().(aporeto)
+	a, ok := t.Stash().(Aporeto)
 	if !ok {
 		log.Fatalln(errors.New("invalid setup"))
 	}
@@ -35,7 +35,7 @@ func CreateTestAccount(ctx context.Context, m manipulate.Manipulator, t barrier.
 // CreateTestNamespace a namespace using the given TestInfo.
 func CreateTestNamespace(ctx context.Context, m manipulate.Manipulator, t barrier.TestInfo) (string, Cleanup, error) {
 
-	a, ok := t.Stash().(aporeto)
+	a, ok := t.Stash().(Aporeto)
 	if !ok {
 		log.Fatalln(errors.New("invalid setup"))
 	}
@@ -53,7 +53,7 @@ func CreateTestNamespace(ctx context.Context, m manipulate.Manipulator, t barrie
 // CreateAccount creates the given gaia.Account and returns a manipulator for this account.
 func CreateAccount(ctx context.Context, m manipulate.Manipulator, account *gaia.Account, t barrier.TestInfo) (manipulate.Manipulator, *gaia.Account, Cleanup, error) {
 
-	a, ok := t.Stash().(aporeto)
+	a, ok := t.Stash().(Aporeto)
 	if !ok {
 		log.Fatalln(errors.New("invalid setup"))
 	}

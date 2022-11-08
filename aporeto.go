@@ -16,9 +16,9 @@ import (
 	"go.aporeto.io/tg/tglib"
 )
 
-// aporeto Specific Code:
+// Aporeto Specific Code:
 
-type aporeto struct {
+type Aporeto struct {
 	encoding          elemental.EncodingType
 	privateAPI        string
 	privateTLSConfig  *tls.Config
@@ -30,7 +30,7 @@ type aporeto struct {
 }
 
 // New creates a new aporeto object that can be stashed into barrier.
-func New(ctx context.Context) (a aporeto, err error) {
+func New(ctx context.Context) (a Aporeto, err error) {
 
 	var caPoolPublic, caPoolPrivate *x509.CertPool
 	var systemCert *tls.Certificate
@@ -111,7 +111,7 @@ func New(ctx context.Context) (a aporeto, err error) {
 		)
 	}
 
-	return aporeto{
+	return Aporeto{
 		// Aporeto Specific
 		encoding:          encoding,
 		privateAPI:        privateAPI,
@@ -124,37 +124,37 @@ func New(ctx context.Context) (a aporeto, err error) {
 }
 
 // RootManipulator returns the root manipulator if any.
-func (a *aporeto) RootManipulator() manipulate.Manipulator {
+func (a *Aporeto) RootManipulator() manipulate.Manipulator {
 	return a.rootManipulator
 }
 
 // PublicManipulator returns the public manipulator if any.
-func (a *aporeto) PublicManipulator() manipulate.Manipulator {
+func (a *Aporeto) PublicManipulator() manipulate.Manipulator {
 	return a.publicManipulator
 }
 
 // PublicAPI returns the public API endpoina.
-func (a *aporeto) PublicAPI() string {
+func (a *Aporeto) PublicAPI() string {
 	return a.publicAPI
 }
 
 // PrivateAPI returns the private API endpoina.
-func (a *aporeto) PrivateAPI() string {
+func (a *Aporeto) PrivateAPI() string {
 	return a.privateAPI
 }
 
 // PublicTLSConfig returns the public TLS config.
-func (a *aporeto) PublicTLSConfig() *tls.Config {
+func (a *Aporeto) PublicTLSConfig() *tls.Config {
 	return a.publicTLSConfig
 }
 
 // PrivateTLSConfig returns the public TLS config.
-func (a *aporeto) PrivateTLSConfig() *tls.Config {
+func (a *Aporeto) PrivateTLSConfig() *tls.Config {
 	return a.privateTLSConfig
 }
 
 // Account returns a gaia Account object that can be used for the test.
-func (a *aporeto) Account(password string) *gaia.Account {
+func (a *Aporeto) Account(password string) *gaia.Account {
 
 	// nolint
 	return &gaia.Account{
@@ -165,17 +165,17 @@ func (a *aporeto) Account(password string) *gaia.Account {
 }
 
 // TestNamespace returns a unique namespace that can be used by this test.
-func (a *aporeto) TestNamespace(iteration int) string {
+func (a *Aporeto) TestNamespace(iteration int) string {
 	return fmt.Sprintf("/%s/%s", a.AccountName(), a.testID)
 }
 
 // AccountName returns a unique account name that can be used by this test.
-func (a *aporeto) AccountName() string {
+func (a *Aporeto) AccountName() string {
 	return fmt.Sprintf("account-%s", a.testID)
 }
 
 // AccountNamespace returns the account namespace that can be used by this test.
-func (a *aporeto) AccountNamespace() string {
+func (a *Aporeto) AccountNamespace() string {
 	return fmt.Sprintf("/account-%s", a.testID)
 }
 
