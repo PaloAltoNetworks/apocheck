@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.aporeto.io/elemental"
 	"go.aporeto.io/gaia"
@@ -28,7 +29,8 @@ type aporeto struct {
 	testID            string
 }
 
-func newAporeto(ctx context.Context) (a aporeto, err error) {
+// New creates a new aporeto object that can be stashed into barrier.
+func New(ctx context.Context) (a aporeto, err error) {
 
 	var caPoolPublic, caPoolPrivate *x509.CertPool
 	var systemCert *tls.Certificate
@@ -222,4 +224,35 @@ func setupCerts(certPath string, keyPath string, keyPass string) (*tls.Certifica
 	}
 
 	return &cert, nil
+}
+
+// ExtendArgs extends the commands with Aporeto specific args
+func ExtendArgs(c *cobra.Command) {
+
+	defaultCaCertPrivate := ""
+	defaultCert := ""
+	defaultKey := ""
+	defaultCaCertPublic := ""
+	cf := os.Getenv("CERTS_FOLDER")
+	if cf != "" {
+		defaultCaCertPrivate = os.ExpandEnv("$CERTS_FOLDER/ca-chain-system.pem")
+		defaultCert = os.ExpandEnv("$CERTS_FOLDER/system-cert.pem")
+		defaultKey = os.ExpandEnv("$CERTS_FOLDER/system-key.pem")
+		defaultCaCertPublic = os.ExpandEnv("$CERTS_FOLDER/ca-chain-public.pem")
+	}
+	// Parameters to connect to private API
+	c.PersistentFlags().String("api-private", "https://127.0.0.1:4444", "Address of the private api gateway")
+	c.PersistentFlags().String("cacert-private", defaultCaCertPrivate, "Path to the private api ca certificate")
+	c.PersistentFlags().String("cert", defaultCert, "Path to client certificate")
+	c.PersistentFlags().String("key-pass", "", "Password for the certificate key")
+	c.PersistentFlags().String("key", defaultKey, "Path to client certificate key")
+
+	// Parameters to connect to public API
+	c.PersistentFlags().String("api-public", "https://127.0.0.1:4443", "Address of the public api gateway")
+	c.PersistentFlags().String("cacert-public", defaultCaCertPublic, "Path to the public api ca certificate")
+	c.PersistentFlags().String("token", "", "Access Token")
+	c.PersistentFlags().String("namespace", "/", "Account Name")
+
+	// Encoding
+	c.PersistentFlags().String("encoding", "msgpack", "Default encoding to use to talk to the API")
 }
