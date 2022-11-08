@@ -5,11 +5,13 @@ go 1.19
 require (
 	github.com/PaloAltoNetworks/barrier v0.0.0-20221108200016-050a75a07ee6
 	github.com/smartystreets/goconvey v1.7.2
+	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.14.0
 	go.aporeto.io/elemental v1.110.0
 	go.aporeto.io/gaia v1.103.0
 	go.aporeto.io/manipulate v1.125.0
 	go.aporeto.io/midgard-lib v1.72.0
+	go.aporeto.io/tg v1.34.1-0.20210528201128-159c302ba155
 )
 
 require (
@@ -38,13 +40,11 @@ require (
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
-	github.com/spf13/cobra v1.6.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/ugorji/go/codec v1.2.4 // indirect
 	github.com/yl2chen/cidranger v1.0.2 // indirect
-	go.aporeto.io/tg v1.34.1-0.20210528201128-159c302ba155 // indirect
 	go.aporeto.io/wsc v1.36.1-0.20210528201141-2af38def4959 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
