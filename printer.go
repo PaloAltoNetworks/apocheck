@@ -74,7 +74,7 @@ func createHeader(currTest testRun, results []testResult, showOnSuccess bool) (f
 			goterm.GREEN,
 		)
 		currTest.testInfo.WriteHeader([]byte(output)) // nolint
-		return
+		return failed
 	}
 
 	color := goterm.GREEN
