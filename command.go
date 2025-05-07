@@ -42,7 +42,7 @@ func NewCommand(
 		},
 	}
 
-	var cmdListTests = &cobra.Command{
+	var cmdList = &cobra.Command{
 		Use:           "list",
 		Aliases:       []string{"ls"},
 		Short:         "List registered tests.",
@@ -51,8 +51,17 @@ func NewCommand(
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return viper.BindPFlags(cmd.Flags())
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+	}
 
+	var cmdListTests = &cobra.Command{
+		Use:           "tests",
+		Short:         "List registered tests.",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return viper.BindPFlags(cmd.Flags())
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
 			suites := filterSuites()
 			return listTests(suites)
 		},
@@ -60,6 +69,24 @@ func NewCommand(
 
 	cmdListTests.Flags().StringSliceP("id", "i", nil, "Only run tests with the given identifier")
 	cmdListTests.Flags().StringSliceP("tag", "t", nil, "Only run tests with the given tags")
+
+	var cmdListSuites = &cobra.Command{
+		Use:           "suites",
+		Short:         "List registered suites.",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return viper.BindPFlags(cmd.Flags())
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			suites := filterSuites()
+			return listSuites(suites)
+		},
+	}
+
+	cmdListSuites.Flags().StringSliceP("suite", "Z", nil, "Only run suites specified")
+
+	cmdList.AddCommand(cmdListTests, cmdListSuites)
 
 	var cmdRunTests = &cobra.Command{
 		Use:           "test",
@@ -185,7 +212,7 @@ func NewCommand(
 
 	rootCmd.AddCommand(
 		versionCmd,
-		cmdListTests,
+		cmdList,
 		cmdRunTests,
 	)
 
